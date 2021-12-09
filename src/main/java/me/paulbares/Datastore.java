@@ -80,8 +80,12 @@ public class Datastore {
         type = DataTypes.StringType;
       } else if (field.getType().equals(Double.class)) {
         type = DataTypes.DoubleType;
+      } else if (field.getType().equals(Float.class)) {
+        type = DataTypes.FloatType;
       } else if (field.getType().equals(Integer.class)) {
         type = DataTypes.IntegerType;
+      } else if (field.getType().equals(Long.class)) {
+        type = DataTypes.LongType;
       } else {
         throw new RuntimeException();
       }
