@@ -5,19 +5,19 @@ import me.paulbares.query.SQLTranslator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import static me.paulbares.Datastore.BASE_STORE_NAME;
 
 public class TestSQLTranslator {
 
   @Test
   void testGrandTotal() {
     Query query = new Query()
-            .addMeasure("pnl", "sum")
-            .addMeasure("delta", "sum")
-            .addMeasure("pnl", "avg");
+            .addAggregatedMeasure("pnl", "sum")
+            .addAggregatedMeasure("delta", "sum")
+            .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select sum(pnl), sum(delta), avg(pnl) from base_store");
+            .isEqualTo("select sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME);
   }
 
   @Test
@@ -25,12 +25,13 @@ public class TestSQLTranslator {
     Query query = new Query()
             .addWildcardCoordinate("scenario")
             .addWildcardCoordinate("type")
-            .addMeasure("pnl", "sum")
-            .addMeasure("delta", "sum")
-            .addMeasure("pnl", "avg");
+            .addAggregatedMeasure("pnl", "sum")
+            .addAggregatedMeasure("delta", "sum")
+            .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from base_store group by scenario, type");
+            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " group by " +
+                    "scenario, type");
   }
 
   @Test
@@ -38,25 +39,35 @@ public class TestSQLTranslator {
     Query query = new Query()
             .addSingleCoordinate("scenario", "Base")
             .addWildcardCoordinate("type")
-            .addMeasure("pnl", "sum")
-            .addMeasure("delta", "sum")
-            .addMeasure("pnl", "avg");
+            .addAggregatedMeasure("pnl", "sum")
+            .addAggregatedMeasure("delta", "sum")
+            .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from base_store where scenario = 'Base' group by scenario, type");
-
+            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " where " +
+                    "scenario = 'Base' group by scenario, type");
   }
 
   @Test
   void testConditionsSeveralField() {
     Query query = new Query()
             .addSingleCoordinate("scenario", "Base")
-            .addCoordinates("type", List.of("A", "B"))
-            .addMeasure("pnl", "sum")
-            .addMeasure("delta", "sum")
-            .addMeasure("pnl", "avg");
+            .addCoordinates("type", "A", "B")
+            .addAggregatedMeasure("pnl", "sum")
+            .addAggregatedMeasure("delta", "sum")
+            .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from base_store where scenario = 'Base' and type in ('A, B') group by scenario, type");
+            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " where scenario = 'Base' and type in ('A', 'B') group by scenario, type");
+  }
+
+  @Test
+  void testDifferentMeasures() {
+    Query query = new Query()
+            .addAggregatedMeasure("pnl", "sum")
+            .addExpressionMeasure("100 * sum(delta) / sum(pnl)");
+
+    Assertions.assertThat(SQLTranslator.translate(query))
+          .isEqualTo("select sum(pnl), 100 * sum(delta) / sum(pnl) from " + BASE_STORE_NAME);
   }
 }

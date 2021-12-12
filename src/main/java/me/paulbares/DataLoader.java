@@ -6,6 +6,9 @@ import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.lit;
 import static org.apache.spark.sql.functions.sum;
 
+/**
+ * --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+ */
 public class DataLoader {
 
   static List<String> headers() {
@@ -60,7 +63,7 @@ public class DataLoader {
 //    datastore.get().show();
 
     datastore.get()
-            .groupBy("Scenario", type.getName())
+            .groupBy("scenario", type.getName())
             .agg(sum(col("Marge")), sum(col("NumerateurIndice")), sum(score.col()))
             .withColumn("Indice Prix Visi",
                     col("sum(NumerateurIndice)").divide(col("sum(ScoreVisi)")).multiply(lit(100)))
@@ -68,21 +71,21 @@ public class DataLoader {
 
     datastore.get().createOrReplaceTempView("base_store");
     datastore.spark.sql("""
-            SELECT Scenario, Type_Marque, sum(Marge), sum(NumerateurIndice), sum(ScoreVisi)
+            SELECT Scenario, Type_Marque, sum(Marge), sum(NumerateurIndice), sum(ScoreVisi), 100 * sum(NumerateurIndice)/sum(ScoreVisi)
             FROM base_store
             group by Scenario, Type_Marque
             """).show();
 
 //    Dataset<Row> select = datastore.get()
-//            .groupBy("Scenario")
+//            .groupBy("scenario")
 //            .agg(sum(col("Marge")), sum(col("NumerateurIndice")), sum(score.col()))
 //            .withColumn("Indice Prix Visi",
 //                    col("sum(NumerateurIndice)").divide(col("sum(ScoreVisi)")).multiply(lit(100)))
-//            .select("Scenario", "sum(Marge)", "Indice Prix Visi");
+//            .select("scenario", "sum(Marge)", "Indice Prix Visi");
 //    select.show();
 //
 //    StructType schema = new StructType()
-//            .add("Scenario", DataTypes.StringType)
+//            .add("scenario", DataTypes.StringType)
 //            .add("Group", DataTypes.StringType);
 //
 //    Map<String, List<String>> groups = new LinkedHashMap<>();
@@ -95,14 +98,14 @@ public class DataLoader {
 //    Dataset<Row> dataFrame = datastore.spark.createDataFrame(rows, schema);// to load pojo
 //    dataFrame.show();
 //
-//    Dataset<Row> join = select.join(dataFrame, select.col("Scenario").equalTo(dataFrame.col("Scenario")));
+//    Dataset<Row> join = select.join(dataFrame, select.col("scenario").equalTo(dataFrame.col("scenario")));
 //    join.show();
 //
-//    WindowSpec window = Window.partitionBy("Group").orderBy(select.col("Scenario"));
+//    WindowSpec window = Window.partitionBy("Group").orderBy(select.col("scenario"));
 //    join
 //            .withColumn("delta(sum(Marge))", col("sum(Marge)").minus(lag("sum(Marge)", 1).over(window)))
 //            .withColumn("delta(Indice Prix Visi)", col("Indice Prix Visi").minus(lag("Indice Prix Visi", 1).over(window)))
-//            .select(dataFrame.col("Group"),dataFrame.col("Scenario"), col("delta(sum(Marge))"), col("delta(Indice Prix Visi)"))
+//            .select(dataFrame.col("Group"),dataFrame.col("scenario"), col("delta(sum(Marge))"), col("delta(Indice Prix Visi)"))
 //            .show();
 
 //    Thread.currentThread().join();

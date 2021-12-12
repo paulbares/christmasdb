@@ -17,11 +17,14 @@ import java.util.Map;
 
 public class Datastore {
 
+  public static final String BASE_STORE_NAME = "base_store";
+  public static final String MAIN_SCENARIO_NAME = "base";
+
   private final Map<String, Dataset<Row>> m = new HashMap<>();
 
-  final StructType schema;
+  public final StructType schema;
 
-  final SparkSession spark;
+  public final SparkSession spark;
 
   private Column[] columns;
 
@@ -48,20 +51,20 @@ public class Datastore {
   }
 
   public void show(String scenario) {
-    this.m.get(scenario).withColumn("Scenario", functions.lit(scenario)).show(100);
+    this.m.get(scenario).withColumn("scenario", functions.lit(scenario)).show(100);
   }
 
   public Dataset<Row> get() {
     List<Dataset<Row>> list = new ArrayList<>();
     Dataset<Row> union = null;
     for (Map.Entry<String, Dataset<Row>> e : this.m.entrySet()) {
-      if (e.getKey().equals("Base")) {
-        union = e.getValue().withColumn("Scenario", functions.lit(e.getKey()));
+      if (e.getKey().equals(MAIN_SCENARIO_NAME)) {
+        union = e.getValue().withColumn("scenario", functions.lit(e.getKey()));
         for (Dataset<Row> d : list) {
           union = union.unionAll(d);
         }
       } else {
-        Dataset<Row> scenario = e.getValue().withColumn("Scenario", functions.lit(e.getKey()));
+        Dataset<Row> scenario = e.getValue().withColumn("scenario", functions.lit(e.getKey()));
         if (union == null) {
           list.add(scenario);
         } else {
@@ -78,13 +81,13 @@ public class Datastore {
       DataType type;
       if (field.getType().equals(String.class)) {
         type = DataTypes.StringType;
-      } else if (field.getType().equals(Double.class)) {
+      } else if (field.getType().equals(Double.class) || field.getType().equals(double.class)) {
         type = DataTypes.DoubleType;
-      } else if (field.getType().equals(Float.class)) {
+      } else if (field.getType().equals(Float.class) || field.getType().equals(float.class)) {
         type = DataTypes.FloatType;
-      } else if (field.getType().equals(Integer.class)) {
+      } else if (field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
         type = DataTypes.IntegerType;
-      } else if (field.getType().equals(Long.class)) {
+      } else if (field.getType().equals(Long.class) || field.getType().equals(long.class)) {
         type = DataTypes.LongType;
       } else {
         throw new RuntimeException();

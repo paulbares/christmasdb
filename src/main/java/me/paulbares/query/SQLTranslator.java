@@ -6,17 +6,6 @@ import java.util.stream.Collectors;
 
 public class SQLTranslator {
 
-//   datastore.get()
-//           .groupBy("Scenario", type.getName())
-//          .agg(sum(col("Marge")), sum(col("NumérateurIndice")), sum(score.col()))
-
-  // TODO support only groupBy agg
-
-  //  SELECT column_name(s)
-//  FROM table_name
-//  WHERE condition
-//  GROUP BY column_name(s)
-//  record
   public static String translate(Query query) {
     List<String> selects = new ArrayList<>();
     List<String> groupBy = new ArrayList<>();
@@ -30,10 +19,10 @@ public class SQLTranslator {
       } else if (values.size() == 1) {
         conditions.add(field + " = '" + values.get(0) + "'");
       } else {
-        conditions.add(field + " in (" + values.stream().collect(Collectors.joining(", ", "'", "'")) + ")");
+        conditions.add(field + " in (" + values.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + ")");
       }
     });
-    query.measure.forEach(m -> aggregates.add(m.aggregationFunction + "(" + m.name + ")"));
+    query.measures.forEach(m -> aggregates.add(m.sqlExpression()));
 
     groupBy.forEach(selects::add); // coord first, then aggregates
     aggregates.forEach(selects::add);
