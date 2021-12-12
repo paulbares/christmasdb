@@ -2,8 +2,11 @@ package me.paulbares.query;
 
 import java.util.Objects;
 
+import static me.paulbares.query.SQLTranslator.escape;
+
 public class ExpressionMeasure implements Measure {
 
+  public String alias;
   public String expression;
 
   /**
@@ -12,13 +15,14 @@ public class ExpressionMeasure implements Measure {
   public ExpressionMeasure() {
   }
 
-  public ExpressionMeasure(String expression) {
+  public ExpressionMeasure(String alias, String expression) {
+    this.alias = Objects.requireNonNull(alias);
     this.expression = Objects.requireNonNull(expression);
   }
 
   @Override
   public String sqlExpression() {
-    return this.expression;
+    return this.expression + " as " + escape(this.alias);
   }
 
   @Override
@@ -30,18 +34,19 @@ public class ExpressionMeasure implements Measure {
       return false;
     }
     ExpressionMeasure that = (ExpressionMeasure) o;
-    return expression.equals(that.expression);
+    return alias.equals(that.alias) && expression.equals(that.expression);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(expression);
+    return Objects.hash(alias, expression);
   }
 
   @Override
   public String toString() {
     return "ExpressionMeasure{" +
-            "expression='" + expression + '\'' +
+            "alias='" + alias + '\'' +
+            ", expression='" + expression + '\'' +
             '}';
   }
 }

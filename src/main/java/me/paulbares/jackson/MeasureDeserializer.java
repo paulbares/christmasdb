@@ -21,7 +21,10 @@ public class MeasureDeserializer extends JsonDeserializer<Measure> {
               Objects.requireNonNull(treeNode.get("name")).asText(),
               aggregationFunction.asText());
     } else {
-      return new ExpressionMeasure(Objects.requireNonNull(treeNode.get("expression")).asText());
+      return new ExpressionMeasure(
+              Objects.requireNonNull(treeNode.get("alias")).asText(),
+              Objects.requireNonNull(treeNode.get("expression")).asText()
+      );
     }
   }
 }

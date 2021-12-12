@@ -17,7 +17,7 @@ public class TestSQLTranslator {
             .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME);
+            .isEqualTo("select sum(`pnl`), sum(`delta`), avg(`pnl`) from " + BASE_STORE_NAME);
   }
 
   @Test
@@ -30,8 +30,8 @@ public class TestSQLTranslator {
             .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " group by " +
-                    "scenario, type");
+            .isEqualTo("select `scenario`, `type`, sum(`pnl`), sum(`delta`), avg(`pnl`) from " + BASE_STORE_NAME + " group by " +
+                    "`scenario`, `type`");
   }
 
   @Test
@@ -44,8 +44,8 @@ public class TestSQLTranslator {
             .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " where " +
-                    "scenario = 'Base' group by scenario, type");
+            .isEqualTo("select `scenario`, `type`, sum(`pnl`), sum(`delta`), avg(`pnl`) from " + BASE_STORE_NAME + " where " +
+                    "`scenario` = 'Base' group by `scenario`, `type`");
   }
 
   @Test
@@ -58,16 +58,16 @@ public class TestSQLTranslator {
             .addAggregatedMeasure("pnl", "avg");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-            .isEqualTo("select scenario, type, sum(pnl), sum(delta), avg(pnl) from " + BASE_STORE_NAME + " where scenario = 'Base' and type in ('A', 'B') group by scenario, type");
+            .isEqualTo("select `scenario`, `type`, sum(`pnl`), sum(`delta`), avg(`pnl`) from " + BASE_STORE_NAME + " where `scenario` = 'Base' and `type` in ('A', 'B') group by `scenario`, `type`");
   }
 
   @Test
   void testDifferentMeasures() {
     Query query = new Query()
             .addAggregatedMeasure("pnl", "sum")
-            .addExpressionMeasure("100 * sum(delta) / sum(pnl)");
+            .addExpressionMeasure("indice", "100 * sum(`delta`) / sum(`pnl`)");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-          .isEqualTo("select sum(pnl), 100 * sum(delta) / sum(pnl) from " + BASE_STORE_NAME);
+          .isEqualTo("select sum(`pnl`), 100 * sum(`delta`) / sum(`pnl`) as indice from " + BASE_STORE_NAME);
   }
 }

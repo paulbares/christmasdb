@@ -45,8 +45,8 @@ public class Query {
     return this;
   }
 
-  public Query addExpressionMeasure(String expression) {
-    this.measures.add(new ExpressionMeasure(expression));
+  public Query addExpressionMeasure(String alias, String expression) {
+    this.measures.add(new ExpressionMeasure(alias, expression));
     return this;
   }
 

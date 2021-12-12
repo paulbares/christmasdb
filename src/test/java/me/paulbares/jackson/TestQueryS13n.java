@@ -15,8 +15,8 @@ public class TestQueryS13n {
             .addWildcardCoordinate("ean")
             .addAggregatedMeasure("price", "sum")
             .addAggregatedMeasure("quantity", "sum")
-            .addExpressionMeasure("firstMyExpression")
-            .addExpressionMeasure("secondMyExpression");
+            .addExpressionMeasure("alias1", "firstMyExpression")
+            .addExpressionMeasure("alias2", "secondMyExpression");
 
     String serialize = JacksonUtil.serialize(query);
     Query deserialize = JacksonUtil.deserialize(serialize, Query.class);

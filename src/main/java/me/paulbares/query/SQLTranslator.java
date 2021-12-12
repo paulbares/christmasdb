@@ -13,13 +13,13 @@ public class SQLTranslator {
 
     List<String> aggregates = new ArrayList<>();
     query.coordinates.forEach((field, values) -> {
-      groupBy.add(field);
+      groupBy.add(escape(field));
       if (values == null) {
         // wildcard
       } else if (values.size() == 1) {
-        conditions.add(field + " = '" + values.get(0) + "'");
+        conditions.add(escape(field) + " = '" + values.get(0) + "'");
       } else {
-        conditions.add(field + " in (" + values.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + ")");
+        conditions.add(escape(field) + " in (" + values.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")) + ")");
       }
     });
     query.measures.forEach(m -> aggregates.add(m.sqlExpression()));
@@ -38,5 +38,9 @@ public class SQLTranslator {
       statement.append(" group by ").append(groupBy.stream().collect(Collectors.joining(", ")));
     }
     return statement.toString();
+  }
+
+  public static String escape(String column) {
+    return "`" + column + "`";
   }
 }
