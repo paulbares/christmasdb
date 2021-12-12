@@ -3,8 +3,6 @@ package me.paulbares;
 import java.util.List;
 
 import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.lit;
-import static org.apache.spark.sql.functions.sum;
 
 /**
  * --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
@@ -37,44 +35,50 @@ public class DataLoader {
     );
   }
 
-  public static void main(String[] args) throws InterruptedException {
-    var ean = new Field("Ean", String.class);
-    var pdv = new Field("PDV", String.class);
-    var categorie = new Field("Categorie", String.class);
-    var type = new Field("Type_Marque", String.class);
-    var sensi = new Field("Sensibilite", String.class);
-    var quantite = new Field("Quantite", Integer.class);
-    var prix = new Field("Prix", Double.class);
-    var achat = new Field("Achat", Integer.class);
-    var score = new Field("ScoreVisi", Integer.class);
-    var minMarche = new Field("Min Marche", Double.class);
+  public static Datastore createTestDatastoreWithData() {
+    var ean = new Field("ean", String.class);
+    var pdv = new Field("pdv", String.class);
+    var categorie = new Field("categorie", String.class);
+    var type = new Field("type-marque", String.class);
+    var sensi = new Field("sensibilite", String.class);
+    var quantite = new Field("quantite", Integer.class);
+    var prix = new Field("prix", Double.class);
+    var achat = new Field("achat", Integer.class);
+    var score = new Field("score-visi", Integer.class);
+    var minMarche = new Field("min-marche", Double.class);
 
     Datastore datastore = new Datastore(
             List.of(ean, pdv, categorie, type, sensi, quantite, prix, achat, score, minMarche),
-            quantite.col().multiply(prix.col()).as("CA"),
-            quantite.col().multiply(prix.col().minus(achat.col())).as("Marge"),
-            prix.col().divide(minMarche.col()).multiply(score.col()).as("NumerateurIndice"),
-            col("NumerateurIndice").divide(score.col()).as("Indice prix"));
+            quantite.col().multiply(prix.col()).as("ca"),
+            quantite.col().multiply(prix.col().minus(achat.col())).as("marge"),
+            prix.col().divide(minMarche.col()).multiply(score.col()).as("numerateur-indice"),
+            col("numerateur-indice").divide(score.col()).as("indice-prix"));
 
-    datastore.load("Base", dataBase());
-    datastore.load("MDD Baisse", dataMDDBaisse());
-    datastore.load("MDD Baisse Simu Sensi", dataMDDBaisseSimuSensi());
+    datastore.load(Datastore.MAIN_SCENARIO_NAME, dataBase());
+    datastore.load("mdd-baisse", dataMDDBaisse());
+    datastore.load("mdd-baisse-simu-sensi", dataMDDBaisseSimuSensi());
+
+    return datastore;
+  }
+
+  public static void main(String[] args) {
+    Datastore datastore = createTestDatastoreWithData();
 
 //    datastore.get().show();
 
-    datastore.get()
-            .groupBy("scenario", type.getName())
-            .agg(sum(col("Marge")), sum(col("NumerateurIndice")), sum(score.col()))
-            .withColumn("Indice Prix Visi",
-                    col("sum(NumerateurIndice)").divide(col("sum(ScoreVisi)")).multiply(lit(100)))
-            .show();
-
-    datastore.get().createOrReplaceTempView("base_store");
-    datastore.spark.sql("""
-            SELECT Scenario, Type_Marque, sum(Marge), sum(NumerateurIndice), sum(ScoreVisi), 100 * sum(NumerateurIndice)/sum(ScoreVisi)
-            FROM base_store
-            group by Scenario, Type_Marque
-            """).show();
+//    datastore.get()
+//            .groupBy("scenario", type.getName())
+//            .agg(sum(col("Marge")), sum(col("NumerateurIndice")), sum(score.col()))
+//            .withColumn("Indice Prix Visi",
+//                    col("sum(NumerateurIndice)").divide(col("sum(ScoreVisi)")).multiply(lit(100)))
+//            .show();
+//
+//    datastore.get().createOrReplaceTempView("base_store");
+//    datastore.spark.sql("""
+//            SELECT Scenario, Type_Marque, sum(Marge), sum(NumerateurIndice), sum(ScoreVisi), 100 * sum(NumerateurIndice)/sum(ScoreVisi)
+//            FROM base_store
+//            group by Scenario, Type_Marque
+//            """).show();
 
 //    Dataset<Row> select = datastore.get()
 //            .groupBy("scenario")

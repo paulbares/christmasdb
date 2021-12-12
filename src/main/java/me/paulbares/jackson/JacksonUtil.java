@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 public class JacksonUtil {
 
-  static final ObjectMapper mapper;
+  public static final ObjectMapper mapper;
 
   static {
     mapper = new ObjectMapper();
