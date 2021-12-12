@@ -79,20 +79,20 @@ public class Datastore {
     StructType schema = new StructType();
     for (Field field : fields) {
       DataType type;
-      if (field.getType().equals(String.class)) {
+      if (field.type().equals(String.class)) {
         type = DataTypes.StringType;
-      } else if (field.getType().equals(Double.class) || field.getType().equals(double.class)) {
+      } else if (field.type().equals(Double.class) || field.type().equals(double.class)) {
         type = DataTypes.DoubleType;
-      } else if (field.getType().equals(Float.class) || field.getType().equals(float.class)) {
+      } else if (field.type().equals(Float.class) || field.type().equals(float.class)) {
         type = DataTypes.FloatType;
-      } else if (field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
+      } else if (field.type().equals(Integer.class) || field.type().equals(int.class)) {
         type = DataTypes.IntegerType;
-      } else if (field.getType().equals(Long.class) || field.getType().equals(long.class)) {
+      } else if (field.type().equals(Long.class) || field.type().equals(long.class)) {
         type = DataTypes.LongType;
       } else {
         throw new RuntimeException();
       }
-      schema = schema.add(field.getName(), type);
+      schema = schema.add(field.name(), type);
     }
     return schema;
   }

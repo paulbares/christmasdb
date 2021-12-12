@@ -68,6 +68,6 @@ public class TestSQLTranslator {
             .addExpressionMeasure("indice", "100 * sum(`delta`) / sum(`pnl`)");
 
     Assertions.assertThat(SQLTranslator.translate(query))
-          .isEqualTo("select sum(`pnl`), 100 * sum(`delta`) / sum(`pnl`) as indice from " + BASE_STORE_NAME);
+          .isEqualTo("select sum(`pnl`), 100 * sum(`delta`) / sum(`pnl`) as `indice` from " + BASE_STORE_NAME);
   }
 }
