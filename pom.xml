@@ -93,7 +93,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>me.paulbares.spring.SparkApplication</mainClass>
+                    <mainClass>me.paulbares.spring.ScenarioAnalysisApplication</mainClass>
                     <jvmArguments>
                         --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
                     </jvmArguments>

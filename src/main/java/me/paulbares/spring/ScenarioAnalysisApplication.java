@@ -10,10 +10,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 @SpringBootApplication
-public class SparkApplication {
+public class ScenarioAnalysisApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(SparkApplication.class, args);
+    SpringApplication.run(ScenarioAnalysisApplication.class, args);
   }
 
   @Bean

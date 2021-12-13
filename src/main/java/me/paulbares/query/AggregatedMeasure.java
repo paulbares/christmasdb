@@ -6,7 +6,7 @@ import static me.paulbares.query.SQLTranslator.escape;
 
 public class AggregatedMeasure implements Measure {
 
-  public String name;
+  public String field;
 
   public String aggregationFunction;
 
@@ -16,14 +16,14 @@ public class AggregatedMeasure implements Measure {
   public AggregatedMeasure() {
   }
 
-  public AggregatedMeasure(String name, String aggregationFunction) {
-    this.name = Objects.requireNonNull(name);
+  public AggregatedMeasure(String field, String aggregationFunction) {
+    this.field = Objects.requireNonNull(field);
     this.aggregationFunction = Objects.requireNonNull(aggregationFunction);
   }
 
   @Override
   public String sqlExpression() {
-    return this.aggregationFunction + "(" + escape(this.name) + ")";
+    return this.aggregationFunction + "(" + escape(this.field) + ")";
   }
 
   @Override
@@ -35,7 +35,7 @@ public class AggregatedMeasure implements Measure {
       return false;
     }
     AggregatedMeasure that = (AggregatedMeasure) o;
-    return name.equals(that.name) && aggregationFunction.equals(that.aggregationFunction);
+    return field.equals(that.field) && aggregationFunction.equals(that.aggregationFunction);
   }
 
   @Override
@@ -46,7 +46,7 @@ public class AggregatedMeasure implements Measure {
   @Override
   public String toString() {
     return "AggregatedMeasure{" +
-            "name='" + name + '\'' +
+            "name='" + field + '\'' +
             ", aggregationFunction='" + aggregationFunction + '\'' +
             '}';
   }

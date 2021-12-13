@@ -18,7 +18,7 @@ public class MeasureDeserializer extends JsonDeserializer<Measure> {
     JsonNode aggregationFunction = treeNode.get("aggregationFunction");
     if (aggregationFunction != null) {
       return new AggregatedMeasure(
-              Objects.requireNonNull(treeNode.get("name")).asText(),
+              Objects.requireNonNull(treeNode.get("field")).asText(),
               aggregationFunction.asText());
     } else {
       return new ExpressionMeasure(
