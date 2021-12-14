@@ -80,4 +80,20 @@ public class TestQueryEngine {
     Assertions.assertThat(collect).containsExactlyInAnyOrder(
             RowFactory.create("s1", 17.0d, 33));
   }
+
+  /**
+   * Without measure, we can use it to do a discovery.
+   */
+  @Test
+  void testDiscovery() {
+    Query query = new Query().addWildcardCoordinate("scenario");
+    Dataset<Row> rowDataset = new QueryEngine(ds).executeSparkSql(query);
+    List<Row> collect = rowDataset.collectAsList();
+    Assertions.assertThat(collect)
+            .containsExactlyInAnyOrder(
+                    RowFactory.create(MAIN_SCENARIO_NAME),
+                    RowFactory.create("s1"),
+                    RowFactory.create("s2")
+            );
+  }
 }

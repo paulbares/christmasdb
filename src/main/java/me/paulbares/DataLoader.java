@@ -64,6 +64,8 @@ public class DataLoader {
   public static void main(String[] args) {
     Datastore datastore = createTestDatastoreWithData();
 
+
+    datastore.get().select("ean").show();
 //    datastore.get().show();
 
 //    datastore.get()

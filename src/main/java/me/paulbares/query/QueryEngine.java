@@ -10,7 +10,7 @@ public class QueryEngine {
 
   private static final Logger LOGGER = Logger.getLogger(QueryEngine.class.getName());
 
-  private final Datastore datastore;
+  public final Datastore datastore;
 
   public QueryEngine(Datastore datastore) {
     this.datastore = datastore;
