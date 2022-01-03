@@ -59,6 +59,47 @@ public class TestQueryEngine {
   }
 
   @Test
+  void testQueryWildcardWithTotal() {
+    Query query = new Query()
+            .addWildcardCoordinate("scenario")
+            .addAggregatedMeasure("price", "sum")
+            .addAggregatedMeasure("quantity", "sum")
+            .withTotal();
+    List<Row> collect = new QueryEngine(ds).executeSparkSql(query).collectAsList();
+    Assertions.assertThat(collect).containsExactly(
+            RowFactory.create(null, 15.d + 17.d + 14.5, 33 * 3),
+            RowFactory.create("base", 15.0d, 33),
+            RowFactory.create("s1", 17.0d, 33),
+            RowFactory.create("s2", 14.5d, 33));
+  }
+
+  @Test
+  void testQueryWildcardAndCrossjoinWithTotal() {
+    Query query = new Query()
+            .addWildcardCoordinate("scenario")
+            .addWildcardCoordinate("category")
+            .addAggregatedMeasure("price", "sum")
+            .addAggregatedMeasure("quantity", "sum")
+            .withTotal();
+    Dataset<Row> dataset = new QueryEngine(ds).executeSparkSql(query);
+    List<Row> collect = dataset.collectAsList();
+    Assertions.assertThat(collect).containsExactly(
+            RowFactory.create(null, null, 15.d + 17.d + 14.5d, 33 * 3),
+            RowFactory.create("base", null, 15.0d, 33),
+            RowFactory.create("base", "cloth", 10.0d, 3),
+            RowFactory.create("base", "drink", 2.0d, 10),
+            RowFactory.create("base", "food", 3.0d, 20),
+            RowFactory.create("s1", null, 17.0d, 33),
+            RowFactory.create("s1", "cloth", 10.0d, 3),
+            RowFactory.create("s1", "drink", 4.0d, 10),
+            RowFactory.create("s1", "food", 3.0d, 20),
+            RowFactory.create("s2", null, 14.5d, 33),
+            RowFactory.create("s2", "cloth", 10.0d, 3),
+            RowFactory.create("s2", "drink", 1.5d, 10),
+            RowFactory.create("s2", "food", 3.0d, 20));
+  }
+
+  @Test
   void testQuerySeveralCoordinates() {
     Query query = new Query()
             .addCoordinates("scenario", "s1", "s2")

@@ -1,5 +1,7 @@
 package me.paulbares.query;
 
+import me.paulbares.Datastore;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,12 +32,22 @@ public class SQLTranslator {
     StringBuilder statement = new StringBuilder();
     statement.append("select ");
     statement.append(selects.stream().collect(Collectors.joining(", ")));
-    statement.append(" from base_store");
+    statement.append(" from ");
+    statement.append(Datastore.BASE_STORE_NAME);
     if (!conditions.isEmpty()) {
       statement.append(" where ").append(conditions.stream().collect(Collectors.joining(" and ")));
     }
     if (!groupBy.isEmpty()) {
-      statement.append(" group by ").append(groupBy.stream().collect(Collectors.joining(", ")));
+      statement.append(" group by ");
+      if (query.withTotal) {
+        statement.append("rollup(");
+      }
+      String groupByStatement = groupBy.stream().collect(Collectors.joining(", "));
+      statement.append(groupByStatement);
+      if (query.withTotal) {
+        statement.append(") order by ");
+        statement.append(groupByStatement);
+      }
     }
     return statement.toString();
   }

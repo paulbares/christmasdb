@@ -18,6 +18,8 @@ public class Query {
 
   public final long id;
 
+  public boolean withTotal = false;
+
   public Query() {
     this.id = ID.getAndIncrement();
   }
@@ -50,29 +52,31 @@ public class Query {
     return this;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o){
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Query query = (Query) o;
-    return id == query.id && coordinates.equals(query.coordinates) && measures.equals(query.measures);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(coordinates, measures, id);
+  public Query withTotal() {
+    this.withTotal = true;
+    return this;
   }
 
   @Override
   public String toString() {
     return "Query{" +
-            "id=" + id +
-            ", coordinates=" + coordinates +
-            ", measure=" + measures +
+            "coordinates=" + coordinates +
+            ", measures=" + measures +
+            ", id=" + id +
+            ", withTotal=" + withTotal +
             '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Query query = (Query) o;
+    return id == query.id && withTotal == query.withTotal && Objects.equals(coordinates, query.coordinates) && Objects.equals(measures, query.measures);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(coordinates, measures, id, withTotal);
   }
 }

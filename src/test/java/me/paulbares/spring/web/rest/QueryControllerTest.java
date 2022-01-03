@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,28 @@ public class QueryControllerTest {
                       List.of(MAIN_SCENARIO_NAME, 280.00000000000006d, 110.44985250737464),
                       List.of("mdd-baisse-simu-sensi", 190.00000000000003d, 102.94985250737463d),
                       List.of("mdd-baisse", 240.00000000000003d, 107.1165191740413d)
+              );
+            });
+  }
+
+  @Test
+  public void testQueryWithTotal() throws Exception {
+    Query query = new Query()
+            .addWildcardCoordinate("scenario")
+            .withTotal()
+            .addAggregatedMeasure("marge", "sum");
+    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY)
+                    .content(JacksonUtil.serialize(query))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(result -> {
+              String contentAsString = result.getResponse().getContentAsString();
+              Object[] objects = JacksonUtil.mapper.readValue(contentAsString, Object[].class);
+              Assertions.assertThat(objects).containsExactlyInAnyOrder(
+                      Arrays.asList(null, 280.00000000000006d + 190.00000000000003d + 240.00000000000003d),
+                      List.of(MAIN_SCENARIO_NAME, 280.00000000000006d),
+                      List.of("mdd-baisse-simu-sensi", 190.00000000000003d),
+                      List.of("mdd-baisse", 240.00000000000003d)
               );
             });
   }
