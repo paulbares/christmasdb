@@ -25,6 +25,10 @@ public class QueryController {
 
   public static final String MAPPING_METADATA = "/spark-metadata";
 
+  public static final String METADATA_FIELDS_KEY = "fields";
+  public static final String METADATA_AGG_FUNC_KEY = "aggregationFunctions";
+  public static final List<String> SUPPORTED_AGG_FUNCS = List.of("sum", "min", "max", "avg", "var_samp", "var_pop", "stddev_samp", "stddev_pop", "count");
+
   protected final QueryEngine queryEngine;
 
   public QueryController(QueryEngine queryEngine) {
@@ -38,11 +42,13 @@ public class QueryController {
   }
 
   @GetMapping(MAPPING_METADATA)
-  public ResponseEntity<List<Map<String, String>>> getMetadata() {
+  public ResponseEntity<Map<Object, Object>> getMetadata() {
     List<Map<String, String>> collect = Arrays.stream(this.queryEngine.datastore.getFields())
             .map(f -> Map.of("name", f.name(), "type", f.dataType().simpleString()))
             .collect(Collectors.toCollection(() -> new ArrayList<>()));
     collect.add(Map.of("name", "scenario", "type", DataTypes.StringType.simpleString()));
-    return ResponseEntity.ok(collect);
+    return ResponseEntity.ok(Map.of(
+            METADATA_FIELDS_KEY, collect,
+            METADATA_AGG_FUNC_KEY, SUPPORTED_AGG_FUNCS));
   }
 }

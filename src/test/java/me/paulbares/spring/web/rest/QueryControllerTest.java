@@ -99,8 +99,8 @@ public class QueryControllerTest {
     mvc.perform(MockMvcRequestBuilders.get(QueryController.MAPPING_METADATA))
             .andExpect(result -> {
               String contentAsString = result.getResponse().getContentAsString();
-              Object[] objects = JacksonUtil.mapper.readValue(contentAsString, Object[].class);
-              Assertions.assertThat(objects).containsExactlyInAnyOrder(
+              Map objects = JacksonUtil.mapper.readValue(contentAsString, Map.class);
+              Assertions.assertThat((List) objects.get(QueryController.METADATA_FIELDS_KEY)).containsExactlyInAnyOrder(
                       Map.of("name", "ean", "type", "string"),
                       Map.of("name", "pdv", "type", "string"),
                       Map.of("name", "categorie", "type", "string"),
@@ -117,6 +117,7 @@ public class QueryControllerTest {
                       Map.of("name", "indice-prix", "type", "double"),
                       Map.of("name", "scenario", "type", "string")
               );
+              Assertions.assertThat((List) objects.get(QueryController.METADATA_AGG_FUNC_KEY)).containsExactlyInAnyOrder(QueryController.SUPPORTED_AGG_FUNCS.toArray(new String[0]));
             });
   }
 }
