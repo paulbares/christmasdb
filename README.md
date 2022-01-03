@@ -52,48 +52,12 @@ Payload:
 Reponse:
 ```json
 [
-    {
-        "scenario": "base",
-        "type-marque": "MDD",
-        "sum(prix)": 4.9,
-        "sum(marge)": 190.00000000000003,
-        "indice-prix": 122.50000000000001
-    },
-    {
-        "scenario": "base",
-        "type-marque": "MN",
-        "sum(prix)": 5.9,
-        "sum(marge)": 90.00000000000003,
-        "indice-prix": 104.42477876106196
-    },
-    {
-        "scenario": "mdd-baisse-simu-sensi",
-        "type-marque": "MDD",
-        "sum(prix)": 4.0,
-        "sum(marge)": 100.0,
-        "indice-prix": 100.0
-    },
-    {
-        "scenario": "mdd-baisse-simu-sensi",
-        "type-marque": "MN",
-        "sum(prix)": 5.9,
-        "sum(marge)": 90.00000000000003,
-        "indice-prix": 104.42477876106196
-    },
-    {
-        "scenario": "mdd-baisse",
-        "type-marque": "MN",
-        "sum(prix)": 5.9,
-        "sum(marge)": 90.00000000000003,
-        "indice-prix": 104.42477876106196
-    },
-    {
-        "scenario": "mdd-baisse",
-        "type-marque": "MDD",
-        "sum(prix)": 4.5,
-        "sum(marge)": 150.0,
-        "indice-prix": 112.5
-    }
+  ["base","MDD",190.00000000000003,122.50000000000001],
+  ["base","MN",90.00000000000003,104.42477876106196],
+  ["mdd-baisse-simu-sensi","MDD",100.0,100.0],
+  ["mdd-baisse-simu-sensi","MN",90.00000000000003,104.42477876106196],
+  ["mdd-baisse","MN",90.00000000000003,104.42477876106196],
+  ["mdd-baisse","MDD",150.0,112.5]
 ]
 ```
 
@@ -110,15 +74,9 @@ Payload:
 
 ```json
 [
-   {
-      "scenario":"base"
-   },
-   {
-      "scenario":"mdd-baisse-simu-sensi"
-   },
-   {
-      "scenario":"mdd-baisse"
-   }
+  ["base"],
+  ["mdd-baisse-simu-sensi"],
+  ["mdd-baisse"]
 ]
 ```
 

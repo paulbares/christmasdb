@@ -34,7 +34,7 @@ public class QueryController {
   @PostMapping(MAPPING_QUERY)
   public ResponseEntity<String> execute(@RequestBody Query query) {
     Dataset<Row> rowDataset = this.queryEngine.executeSparkSql(query);
-    return ResponseEntity.ok(JacksonUtil.datasetToJSON(rowDataset));
+    return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
   }
 
   @GetMapping(MAPPING_METADATA)

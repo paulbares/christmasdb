@@ -1,5 +1,6 @@
 package me.paulbares;
 
+import me.paulbares.jackson.JacksonUtil;
 import me.paulbares.query.Query;
 import me.paulbares.query.QueryEngine;
 import org.apache.spark.sql.Dataset;
@@ -95,5 +96,16 @@ public class TestQueryEngine {
                     RowFactory.create("s1"),
                     RowFactory.create("s2")
             );
+  }
+
+  @Test
+  void testJsonConverter() {
+    Query query = new Query()
+            .addWildcardCoordinate("scenario")
+            .addAggregatedMeasure("price", "sum")
+            .addAggregatedMeasure("quantity", "sum");
+    Dataset<Row> dataset = new QueryEngine(ds).executeSparkSql(query);
+    Assertions.assertThat(JacksonUtil.datasetToCsv(dataset))
+            .isEqualTo("[[\"base\",15.0,33],[\"s1\",17.0,33],[\"s2\",14.5,33]]");
   }
 }

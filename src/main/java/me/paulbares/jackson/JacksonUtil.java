@@ -7,7 +7,9 @@ import me.paulbares.query.Measure;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class JacksonUtil {
 
@@ -42,6 +44,27 @@ public class JacksonUtil {
     sb.append('[');
     while (it.hasNext()) {
       sb.append(it.next());
+      if (it.hasNext()) {
+        sb.append(',');
+      }
+    }
+    sb.append(']');
+    return sb.toString();
+  }
+
+  public static String datasetToCsv(Dataset<Row> dataset) {
+    Iterator<Row> it = dataset.toLocalIterator();
+    StringBuilder sb = new StringBuilder();
+    sb.append('[');
+    while (it.hasNext()) {
+      Row next = it.next();
+      {
+        List<Object> objs = new ArrayList<>(next.length());
+        for (int i = 0; i < next.length(); i++) {
+          objs.add(next.get(i));
+        }
+        sb.append(JacksonUtil.serialize(objs));
+      }
       if (it.hasNext()) {
         sb.append(',');
       }
