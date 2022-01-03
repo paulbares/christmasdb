@@ -18,7 +18,7 @@ public class Query {
 
   public final long id;
 
-  public boolean withTotal = false;
+  public boolean withTotals = false;
 
   public Query() {
     this.id = ID.getAndIncrement();
@@ -52,8 +52,8 @@ public class Query {
     return this;
   }
 
-  public Query withTotal() {
-    this.withTotal = true;
+  public Query withTotals() {
+    this.withTotals = true;
     return this;
   }
 
@@ -63,7 +63,7 @@ public class Query {
             "coordinates=" + coordinates +
             ", measures=" + measures +
             ", id=" + id +
-            ", withTotal=" + withTotal +
+            ", withTotals=" + withTotals +
             '}';
   }
 
@@ -72,11 +72,11 @@ public class Query {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Query query = (Query) o;
-    return id == query.id && withTotal == query.withTotal && Objects.equals(coordinates, query.coordinates) && Objects.equals(measures, query.measures);
+    return id == query.id && withTotals == query.withTotals && Objects.equals(coordinates, query.coordinates) && Objects.equals(measures, query.measures);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(coordinates, measures, id, withTotal);
+    return Objects.hash(coordinates, measures, id, withTotals);
   }
 }

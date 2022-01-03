@@ -39,12 +39,12 @@ public class SQLTranslator {
     }
     if (!groupBy.isEmpty()) {
       statement.append(" group by ");
-      if (query.withTotal) {
+      if (query.withTotals) {
         statement.append("rollup(");
       }
       String groupByStatement = groupBy.stream().collect(Collectors.joining(", "));
       statement.append(groupByStatement);
-      if (query.withTotal) {
+      if (query.withTotals) {
         statement.append(") order by ");
         statement.append(groupByStatement);
       }

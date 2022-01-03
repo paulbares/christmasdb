@@ -48,10 +48,10 @@ public class QueryControllerTest {
   }
 
   @Test
-  public void testQueryWithTotal() throws Exception {
+  public void testQueryWithTotals() throws Exception {
     Query query = new Query()
             .addWildcardCoordinate("scenario")
-            .withTotal()
+            .withTotals()
             .addAggregatedMeasure("marge", "sum");
     mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY)
                     .content(JacksonUtil.serialize(query))

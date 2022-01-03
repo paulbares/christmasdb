@@ -23,7 +23,7 @@ Key refers to a field in the table. Possible values: ean, pdv, categorie, type-m
 
 #### Query payload example
 
-Cossjoin of scenario|type-marque, measures are prix.sum, marge.sum and a calculated measure:
+Cossjoin of scenario|type-marque, measures are marge.sum and a calculated measure:
 
 Payload:
 
@@ -35,10 +35,6 @@ Payload:
   },
   "measures": [
     {
-      "field": "prix",
-      "aggregationFunction": "sum"
-    },
-    {
       "field": "marge",
       "aggregationFunction": "sum"
     },
@@ -49,7 +45,7 @@ Payload:
   ]
 }
 ```
-Reponse:
+Response:
 ```json
 [
   ["base","MDD",190.00000000000003,122.50000000000001],
@@ -58,6 +54,44 @@ Reponse:
   ["mdd-baisse-simu-sensi","MN",90.00000000000003,104.42477876106196],
   ["mdd-baisse","MN",90.00000000000003,104.42477876106196],
   ["mdd-baisse","MDD",150.0,112.5]
+]
+```
+
+Optional parameter `withTotals`. Default value is false. If true, the result includes extra rows that represent the subtotals, which are commonly referred to as super-aggregate rows, along with the grand total row.
+
+```json
+{
+  "coordinates": {
+    "scenario": null,
+    "type-marque": null
+  },
+  "measures": [
+    {
+      "field": "marge",
+      "aggregationFunction": "sum"
+    },
+    {
+      "alias": "indice-prix",
+      "expression": "100 * sum(`numerateur-indice`) / sum(`score-visi`)"
+    }
+  ],
+  "withTotals": true
+}
+```
+
+Response:
+```json
+[
+  [null,null,710.0000000000001,106.83874139626353],
+  ["base",null,280.00000000000006,110.44985250737464],
+  ["base","MDD",190.00000000000003,122.50000000000001],
+  ["base","MN",90.00000000000003,104.42477876106196],
+  ["mdd-baisse",null,240.00000000000003,107.1165191740413],
+  ["mdd-baisse","MDD",150.0,112.5],
+  ["mdd-baisse","MN",90.00000000000003,104.42477876106196],
+  ["mdd-baisse-simu-sensi",null,190.00000000000003,102.94985250737463],
+  ["mdd-baisse-simu-sensi","MDD",100.0,100.0],
+  ["mdd-baisse-simu-sensi","MN",90.00000000000003,104.42477876106196]
 ]
 ```
 

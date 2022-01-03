@@ -59,12 +59,12 @@ public class TestQueryEngine {
   }
 
   @Test
-  void testQueryWildcardWithTotal() {
+  void testQueryWildcardWithTotals() {
     Query query = new Query()
             .addWildcardCoordinate("scenario")
             .addAggregatedMeasure("price", "sum")
             .addAggregatedMeasure("quantity", "sum")
-            .withTotal();
+            .withTotals();
     List<Row> collect = new QueryEngine(ds).executeSparkSql(query).collectAsList();
     Assertions.assertThat(collect).containsExactly(
             RowFactory.create(null, 15.d + 17.d + 14.5, 33 * 3),
@@ -74,13 +74,13 @@ public class TestQueryEngine {
   }
 
   @Test
-  void testQueryWildcardAndCrossjoinWithTotal() {
+  void testQueryWildcardAndCrossjoinWithTotals() {
     Query query = new Query()
             .addWildcardCoordinate("scenario")
             .addWildcardCoordinate("category")
             .addAggregatedMeasure("price", "sum")
             .addAggregatedMeasure("quantity", "sum")
-            .withTotal();
+            .withTotals();
     Dataset<Row> dataset = new QueryEngine(ds).executeSparkSql(query);
     List<Row> collect = dataset.collectAsList();
     Assertions.assertThat(collect).containsExactly(
