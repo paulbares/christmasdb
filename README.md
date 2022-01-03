@@ -12,7 +12,7 @@ heroku logs --tail -a sa-mvp
 ### DEV URL
 - To check if the server is up and running, open: https://sa-mvp.herokuapp.com/ It can take 1 minute or so because it is hosted on Heroku and uses a free account that is turned off after a period of inactivity. Once up, a message will appear. 
 - To execute a query, send a POST request to https://sa-mvp.herokuapp.com/spark-query. See payload example below. 
-- To get the metadata of the store (to know the fields that can be queried): send a GET request to https://sa-mvp.herokuapp.com/spark-metadata. See response example below
+- To get the metadata of the store (to know the fields that can be queried and the list of supported aggregation functions): send a GET request to https://sa-mvp.herokuapp.com/spark-metadata. See response example below
 
 ### Specification
 
@@ -118,67 +118,80 @@ Payload:
 
 Response:
 ```json
-[
+{
+  "aggregationFunctions":[
+    "sum",
+    "min",
+    "max",
+    "avg",
+    "var_samp",
+    "var_pop",
+    "stddev_samp",
+    "stddev_pop",
+    "count"
+  ],
+  "fields":[
     {
-        "name": "ean",
-        "type": "string"
+      "name":"ean",
+      "type":"string"
     },
     {
-        "name": "pdv",
-        "type": "string"
+      "name":"pdv",
+      "type":"string"
     },
     {
-        "name": "categorie",
-        "type": "string"
+      "name":"categorie",
+      "type":"string"
     },
     {
-        "name": "type-marque",
-        "type": "string"
+      "name":"type-marque",
+      "type":"string"
     },
     {
-        "name": "sensibilite",
-        "type": "string"
+      "name":"sensibilite",
+      "type":"string"
     },
     {
-        "name": "quantite",
-        "type": "int"
+      "name":"quantite",
+      "type":"int"
     },
     {
-        "name": "prix",
-        "type": "double"
+      "name":"prix",
+      "type":"double"
     },
     {
-        "name": "achat",
-        "type": "int"
+      "name":"achat",
+      "type":"int"
     },
     {
-        "name": "score-visi",
-        "type": "int"
+      "name":"score-visi",
+      "type":"int"
     },
     {
-        "name": "min-marche",
-        "type": "double"
+      "name":"min-marche",
+      "type":"double"
     },
     {
-        "name": "ca",
-        "type": "double"
+      "name":"ca",
+      "type":"double"
     },
     {
-        "name": "marge",
-        "type": "double"
+      "name":"marge",
+      "type":"double"
     },
     {
-        "name": "numerateur-indice",
-        "type": "double"
+      "name":"numerateur-indice",
+      "type":"double"
     },
     {
-        "name": "indice-prix",
-        "type": "double"
+      "name":"indice-prix",
+      "type":"double"
     },
     {
-        "name": "scenario",
-        "type": "string"
+      "name":"scenario",
+      "type":"string"
     }
-]
+  ]
+}
 ```
 
