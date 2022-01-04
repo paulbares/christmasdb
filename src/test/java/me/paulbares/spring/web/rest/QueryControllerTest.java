@@ -38,12 +38,13 @@ public class QueryControllerTest {
             .andExpect(status().isOk())
             .andExpect(result -> {
               String contentAsString = result.getResponse().getContentAsString();
-              Object[] objects = JacksonUtil.mapper.readValue(contentAsString, Object[].class);
-              Assertions.assertThat(objects).containsExactlyInAnyOrder(
+              Map queryResult = JacksonUtil.mapper.readValue(contentAsString, Map.class);
+              Assertions.assertThat((List) queryResult.get("rows")).containsExactlyInAnyOrder(
                       List.of(MAIN_SCENARIO_NAME, 280.00000000000006d, 110.44985250737464),
                       List.of("mdd-baisse-simu-sensi", 190.00000000000003d, 102.94985250737463d),
                       List.of("mdd-baisse", 240.00000000000003d, 107.1165191740413d)
               );
+              Assertions.assertThat((List) queryResult.get("columns")).containsExactly("scenario", "sum(marge)", "indice-prix");
             });
   }
 
@@ -59,13 +60,15 @@ public class QueryControllerTest {
             .andExpect(status().isOk())
             .andExpect(result -> {
               String contentAsString = result.getResponse().getContentAsString();
-              Object[] objects = JacksonUtil.mapper.readValue(contentAsString, Object[].class);
-              Assertions.assertThat(objects).containsExactlyInAnyOrder(
+              Map queryResult = JacksonUtil.mapper.readValue(contentAsString, Map.class);
+              Assertions.assertThat((List) queryResult.get("rows")).containsExactlyInAnyOrder(
                       Arrays.asList(null, 280.00000000000006d + 190.00000000000003d + 240.00000000000003d),
                       List.of(MAIN_SCENARIO_NAME, 280.00000000000006d),
                       List.of("mdd-baisse-simu-sensi", 190.00000000000003d),
                       List.of("mdd-baisse", 240.00000000000003d)
               );
+              Assertions.assertThat((List) queryResult.get("columns")).containsExactly("scenario", "sum(marge)");
+
             });
   }
 

@@ -147,6 +147,7 @@ public class TestQueryEngine {
             .addAggregatedMeasure("quantity", "sum");
     Dataset<Row> dataset = new QueryEngine(ds).executeSparkSql(query);
     Assertions.assertThat(JacksonUtil.datasetToCsv(dataset))
-            .isEqualTo("[[\"base\",15.0,33],[\"s1\",17.0,33],[\"s2\",14.5,33]]");
+            .isEqualTo("{\"rows\":[[\"base\",15.0,33],[\"s1\",17.0,33],[\"s2\",14.5,33]],\"columns\":[\"scenario\"," +
+                    "\"sum(price)\",\"sum(quantity)\"]}");
   }
 }

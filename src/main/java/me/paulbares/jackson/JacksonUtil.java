@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import me.paulbares.query.Measure;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import scala.jdk.javaapi.CollectionConverters;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class JacksonUtil {
 
@@ -54,22 +56,11 @@ public class JacksonUtil {
 
   public static String datasetToCsv(Dataset<Row> dataset) {
     Iterator<Row> it = dataset.toLocalIterator();
-    StringBuilder sb = new StringBuilder();
-    sb.append('[');
+    List<List<Object>> rows = new ArrayList<>();
     while (it.hasNext()) {
       Row next = it.next();
-      {
-        List<Object> objs = new ArrayList<>(next.length());
-        for (int i = 0; i < next.length(); i++) {
-          objs.add(next.get(i));
-        }
-        sb.append(JacksonUtil.serialize(objs));
-      }
-      if (it.hasNext()) {
-        sb.append(',');
-      }
+      rows.add(CollectionConverters.asJava(next.toSeq()));
     }
-    sb.append(']');
-    return sb.toString();
+    return JacksonUtil.serialize(Map.of("columns", dataset.columns(), "rows", rows));
   }
 }
