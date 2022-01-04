@@ -47,14 +47,22 @@ Payload:
 ```
 Response:
 ```json
-[
-  ["base","MDD",190.00000000000003,122.50000000000001],
-  ["base","MN",90.00000000000003,104.42477876106196],
-  ["mdd-baisse-simu-sensi","MDD",100.0,100.0],
-  ["mdd-baisse-simu-sensi","MN",90.00000000000003,104.42477876106196],
-  ["mdd-baisse","MN",90.00000000000003,104.42477876106196],
-  ["mdd-baisse","MDD",150.0,112.5]
-]
+{
+  "columns":[
+    "scenario",
+    "type-marque",
+    "sum(marge)",
+    "indice-prix"
+  ],
+   "rows":[
+      ["base", "MDD", 190.00000000000003, 122.50000000000001],
+      ["base", "MN", 90.00000000000003, 104.42477876106196],
+      ["mdd-baisse-simu-sensi", "MDD", 100.0, 100.0],
+      ["mdd-baisse-simu-sensi", "MN", 90.00000000000003, 104.42477876106196],
+      ["mdd-baisse", "MN", 90.00000000000003, 104.42477876106196],
+      ["mdd-baisse", "MDD", 150.0, 112.5]
+   ]
+}
 ```
 
 Optional parameter `withTotals`. Default value is false. If true, the result includes extra rows that represent the subtotals, which are commonly referred to as super-aggregate rows, along with the grand total row.
@@ -81,18 +89,26 @@ Optional parameter `withTotals`. Default value is false. If true, the result inc
 
 Response:
 ```json
-[
-  [null,null,710.0000000000001,106.83874139626353],
-  ["base",null,280.00000000000006,110.44985250737464],
-  ["base","MDD",190.00000000000003,122.50000000000001],
-  ["base","MN",90.00000000000003,104.42477876106196],
-  ["mdd-baisse",null,240.00000000000003,107.1165191740413],
-  ["mdd-baisse","MDD",150.0,112.5],
-  ["mdd-baisse","MN",90.00000000000003,104.42477876106196],
-  ["mdd-baisse-simu-sensi",null,190.00000000000003,102.94985250737463],
-  ["mdd-baisse-simu-sensi","MDD",100.0,100.0],
-  ["mdd-baisse-simu-sensi","MN",90.00000000000003,104.42477876106196]
-]
+{
+   "columns":[
+      "scenario",
+      "type-marque",
+      "sum(marge)",
+      "indice-prix"
+   ],
+   "rows":[
+      [null, null, 710.0000000000001, 106.83874139626353],
+      ["base", null, 280.00000000000006, 110.44985250737464],
+      ["base", "MDD", 190.00000000000003, 122.50000000000001],
+      ["base", "MN", 90.00000000000003, 104.42477876106196],
+      ["mdd-baisse", null, 240.00000000000003, 107.1165191740413],
+      ["mdd-baisse", "MDD", 150.0, 112.5],
+      ["mdd-baisse", "MN", 90.00000000000003, 104.42477876106196],
+      ["mdd-baisse-simu-sensi", null, 190.00000000000003, 102.94985250737463],
+      ["mdd-baisse-simu-sensi", "MDD", 100.0, 100.0],
+      ["mdd-baisse-simu-sensi", "MN", 90.00000000000003, 104.42477876106196]
+   ]
+}
 ```
 
 This API can also be used for discovery! For instance to fetch all existing scenario:
@@ -106,12 +122,18 @@ Payload:
 }
 ```
 
+Response:
 ```json
-[
-  ["base"],
-  ["mdd-baisse-simu-sensi"],
-  ["mdd-baisse"]
-]
+{
+   "columns":[
+      "scenario"
+   ],
+   "rows":[
+      ["base"],
+      ["mdd-baisse-simu-sensi"],
+      ["mdd-baisse"]
+   ]
+}
 ```
 
 #### Metadata response example
