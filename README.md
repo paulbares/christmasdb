@@ -222,11 +222,11 @@ Response:
 
 The use case is explained [in this document.](https://docs.google.com/document/d/1-gPXlpSaoAmkHgZ_lmTmHNqz3CyVehDUzHwRbC9Uw4I/edit?usp=sharing)
 
-`comparisonMethod` can be `ABSOLUTE` or `RELATIVE`. 
-```
-if ABSOLUTE, value = (currentValue - previousValue) 
-if RELATIVE, value = (currentValue - previousValue) / previousValue
-```
+`comparisonMethod` can be `ABSOLUTE` or `RELATIVE` to determine which formula to apply to compute cell values
+
+ABSOLUTE: `value = (currentValue - previousValue)` 
+
+RELATIVE: `value = (currentValue - previousValue) / previousValue`
 
 Payload
 ```json
