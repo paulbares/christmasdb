@@ -217,3 +217,44 @@ Response:
 }
 ```
 
+#### Scenario Grouping payload example
+
+The use case is explained [in this document.](https://docs.google.com/document/d/1-gPXlpSaoAmkHgZ_lmTmHNqz3CyVehDUzHwRbC9Uw4I/edit?usp=sharing)
+
+Payload
+```json
+{
+    "comparisonMethod": "ABSOLUTE",
+    "groups": {
+        "group1" : ["base", "mdd-baisse-simu-sensi"],
+        "group2" : ["base", "mdd-baisse"],
+        "group3" : ["base", "mdd-baisse-simu-sensi", "mdd-baisse"]
+    },
+    "measures" : [
+        {
+            "field": "marge",
+            "aggregationFunction": "sum"
+        },
+        {
+            "alias": "indice-prix",
+            "expression": "100 * sum(`numerateur-indice`) / sum(`score-visi`)"
+        }
+    ]
+}
+```
+
+Response
+```json
+{
+  "columns": ["group","scenario","abs. diff. sum(marge)","abs. diff. indice-prix"],
+  "rows": [
+    ["group1","base",0.0,0.0],
+    ["group1","mdd-baisse-simu-sensi",-90.00000000000003,-7.500000000000014],
+    ["group2","base",0.0,0.0],
+    ["group2","mdd-baisse",-40.00000000000003,-3.333333333333343],
+    ["group3","base",0.0,0.0],
+    ["group3","mdd-baisse-simu-sensi",-90.00000000000003,-7.500000000000014],
+    ["group3","mdd-baisse",50.0,4.166666666666671]
+  ]
+}
+```
