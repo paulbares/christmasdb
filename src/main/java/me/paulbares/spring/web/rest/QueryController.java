@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,6 +38,14 @@ public class QueryController {
 
   @PostMapping(MAPPING_QUERY)
   public ResponseEntity<String> execute(@RequestBody Query query) {
+    Dataset<Row> rowDataset = this.queryEngine.executeSparkSql(query);
+    return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
+  }
+
+
+  @PostMapping(MAPPING_QUERY + "-grouping")
+  public ResponseEntity<String> executeGrouping(@RequestBody Query query) {
+    Map<String, List<String>> groups = new HashMap<>(); // come from the query
     Dataset<Row> rowDataset = this.queryEngine.executeSparkSql(query);
     return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
   }
