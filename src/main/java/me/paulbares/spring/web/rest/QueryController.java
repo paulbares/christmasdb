@@ -3,6 +3,7 @@ package me.paulbares.spring.web.rest;
 import me.paulbares.jackson.JacksonUtil;
 import me.paulbares.query.Query;
 import me.paulbares.query.QueryEngine;
+import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.types.DataTypes;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class QueryController {
 
   public static final String MAPPING_QUERY = "/spark-query";
-
+  public static final String MAPPING_QUERY_GROUPING = MAPPING_QUERY + "-scenario-grouping";
   public static final String MAPPING_METADATA = "/spark-metadata";
 
   public static final String METADATA_FIELDS_KEY = "fields";
@@ -43,10 +43,9 @@ public class QueryController {
   }
 
 
-  @PostMapping(MAPPING_QUERY + "-grouping")
-  public ResponseEntity<String> executeGrouping(@RequestBody Query query) {
-    Map<String, List<String>> groups = new HashMap<>(); // come from the query
-    Dataset<Row> rowDataset = this.queryEngine.executeSparkSql(query);
+  @PostMapping(MAPPING_QUERY_GROUPING)
+  public ResponseEntity<String> executeGrouping(@RequestBody ScenarioGroupingQuery query) {
+    Dataset<Row> rowDataset = this.queryEngine.executeGroupingQuery(query);
     return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
   }
 

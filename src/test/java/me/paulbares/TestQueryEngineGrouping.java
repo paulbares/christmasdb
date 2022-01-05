@@ -1,8 +1,8 @@
 package me.paulbares;
 
 import me.paulbares.query.ComparisonMethod;
-import me.paulbares.query.Query;
 import me.paulbares.query.QueryEngine;
+import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -49,18 +49,18 @@ public class TestQueryEngineGrouping {
 
   @Test
   void testQueryGroupsOfScenario() {
-    Query query = new Query()
-            .addWildcardCoordinate("scenario")
-            .addAggregatedMeasure("price", "sum")
-            .addAggregatedMeasure("quantity", "sum");
-
     Map<String, List<String>> groups = new LinkedHashMap<>();
     groups.put("group1", List.of("base", "s1"));
     groups.put("group2", List.of("base", "s2"));
     groups.put("group3", List.of("base", "s1", "s2"));
 
+    ScenarioGroupingQuery query = new ScenarioGroupingQuery()
+            .addAggregatedMeasure("price", "sum")
+            .addAggregatedMeasure("quantity", "sum")
+            .groups(groups);
+
     { // ABSOLUTE
-      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(groups, query.measures, ComparisonMethod.ABSOLUTE);
+      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(query.comparisonMethod(ComparisonMethod.ABSOLUTE));
       Assertions.assertThat(dataset.columns()).containsExactly(
               "group", "scenario", "abs. diff. sum(price)", "abs. diff. sum(quantity)");
 
@@ -76,7 +76,7 @@ public class TestQueryEngineGrouping {
     }
 
     { // RELATIVE
-      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(groups, query.measures, ComparisonMethod.RELATIVE);
+      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(query.comparisonMethod(ComparisonMethod.RELATIVE));
       Assertions.assertThat(dataset.columns()).containsExactly(
               "group", "scenario", "rel. diff. sum(price)", "rel. diff. sum(quantity)");
 

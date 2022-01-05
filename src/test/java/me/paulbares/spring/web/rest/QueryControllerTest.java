@@ -1,7 +1,9 @@
 package me.paulbares.spring.web.rest;
 
 import me.paulbares.jackson.JacksonUtil;
+import me.paulbares.query.ComparisonMethod;
 import me.paulbares.query.Query;
+import me.paulbares.query.ScenarioGroupingQuery;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -121,6 +124,39 @@ public class QueryControllerTest {
                       Map.of("name", "scenario", "type", "string")
               );
               Assertions.assertThat((List) objects.get(QueryController.METADATA_AGG_FUNC_KEY)).containsExactlyInAnyOrder(QueryController.SUPPORTED_AGG_FUNCS.toArray(new String[0]));
+            });
+  }
+
+  @Test
+  public void testScenarioGroupingQuery() throws Exception {
+    Map<String, List<String>> groups = new LinkedHashMap<>();
+    groups.put("group1", List.of("base", "mdd-baisse-simu-sensi"));
+    groups.put("group2", List.of("base", "mdd-baisse"));
+    groups.put("group3", List.of("base", "mdd-baisse-simu-sensi", "mdd-baisse"));
+
+    ScenarioGroupingQuery query = new ScenarioGroupingQuery()
+            .groups(groups)
+            .comparisonMethod(ComparisonMethod.ABSOLUTE)
+            .addAggregatedMeasure("marge", "sum")
+            .addExpressionMeasure("indice-prix", "100 * sum(`numerateur-indice`) / sum(`score-visi`)");
+
+    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY_GROUPING)
+                    .content(JacksonUtil.serialize(query))
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(result -> {
+              String contentAsString = result.getResponse().getContentAsString();
+              Map queryResult = JacksonUtil.mapper.readValue(contentAsString, Map.class);
+              Assertions.assertThat((List) queryResult.get("rows")).containsExactly(
+                      List.of("group1", "base", 0d, 0d),
+                      List.of("group1", "mdd-baisse-simu-sensi", -90.00000000000003,-7.500000000000014),
+                      List.of("group2", "base", 0d, 0d),
+                      List.of("group2", "mdd-baisse", -40.00000000000003,-3.333333333333343),
+                      List.of("group3", "base", 0d, 0d),
+                      List.of("group3", "mdd-baisse-simu-sensi", -90.00000000000003,-7.500000000000014),
+                      List.of("group3", "mdd-baisse", 50.0,4.166666666666671));
+              Assertions.assertThat((List) queryResult.get("columns")).containsExactly(
+                      "group", "scenario", "abs. diff. sum(marge)", "abs. diff. indice-prix");
             });
   }
 }

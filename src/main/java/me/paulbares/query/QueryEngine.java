@@ -35,11 +35,12 @@ public class QueryEngine {
     return datastore.spark.sql(sql);
   }
 
-  public Dataset<Row> executeGroupingQuery(Map<String, List<String>> groups,
-                                           List<Measure> measures,
-                                           ComparisonMethod comparisonMethod) {
+  public Dataset<Row> executeGroupingQuery(ScenarioGroupingQuery query) {
+    ComparisonMethod comparisonMethod = query.comparisonMethod;
+    Map<String, List<String>> groups = query.groups;
+
     Query q = new Query().addWildcardCoordinate("scenario");
-    q.measures.addAll(measures);
+    q.measures.addAll(query.measures);
 
     Dataset<Row> raw = executeSparkSql(q);
 
