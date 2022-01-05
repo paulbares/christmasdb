@@ -12,6 +12,7 @@ heroku logs --tail -a sa-mvp
 ### DEV URL
 - To check if the server is up and running, open: https://sa-mvp.herokuapp.com/ It can take 1 minute or so because it is hosted on Heroku and uses a free account that is turned off after a period of inactivity. Once up, a message will appear. 
 - To execute a query, send a POST request to https://sa-mvp.herokuapp.com/spark-query. See payload example below. 
+- To execute a "scenario grouping" query, send a POST request to https://sa-mvp.herokuapp.com/spark-query-scenario-grouping. See payload example below. 
 - To get the metadata of the store (to know the fields that can be queried and the list of supported aggregation functions): send a GET request to https://sa-mvp.herokuapp.com/spark-metadata. See response example below
 
 ### Specification
