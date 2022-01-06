@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Datastore {
+public class SparkDatastore {
 
   static {
     Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -37,7 +37,7 @@ public class Datastore {
 
   private Column[] columns;
 
-  public Datastore(List<Field> fields, Column... columns) {
+  public SparkDatastore(List<Field> fields, Column... columns) {
     this.schema = createSchema(fields.toArray(new Field[0]));
     this.spark = SparkSession
             .builder()

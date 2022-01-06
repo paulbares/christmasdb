@@ -2,7 +2,7 @@ package me.paulbares.spring.web.rest;
 
 import me.paulbares.jackson.JacksonUtil;
 import me.paulbares.query.Query;
-import me.paulbares.query.QueryEngine;
+import me.paulbares.query.spark.SparkQueryEngine;
 import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-public class QueryController {
+public class SparkQueryController {
 
   public static final String MAPPING_QUERY = "/spark-query";
   public static final String MAPPING_QUERY_GROUPING = MAPPING_QUERY + "-scenario-grouping";
@@ -30,22 +30,22 @@ public class QueryController {
   public static final String METADATA_AGG_FUNC_KEY = "aggregationFunctions";
   public static final List<String> SUPPORTED_AGG_FUNCS = List.of("sum", "min", "max", "avg", "var_samp", "var_pop", "stddev_samp", "stddev_pop", "count");
 
-  protected final QueryEngine queryEngine;
+  protected final SparkQueryEngine queryEngine;
 
-  public QueryController(QueryEngine queryEngine) {
+  public SparkQueryController(SparkQueryEngine queryEngine) {
     this.queryEngine = queryEngine;
   }
 
   @PostMapping(MAPPING_QUERY)
   public ResponseEntity<String> execute(@RequestBody Query query) {
-    Dataset<Row> rowDataset = this.queryEngine.executeSparkSql(query);
+    Dataset<Row> rowDataset = this.queryEngine.execute(query);
     return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
   }
 
 
   @PostMapping(MAPPING_QUERY_GROUPING)
   public ResponseEntity<String> executeGrouping(@RequestBody ScenarioGroupingQuery query) {
-    Dataset<Row> rowDataset = this.queryEngine.executeGroupingQuery(query);
+    Dataset<Row> rowDataset = this.queryEngine.executeGrouping(query);
     return ResponseEntity.ok(JacksonUtil.datasetToCsv(rowDataset));
   }
 

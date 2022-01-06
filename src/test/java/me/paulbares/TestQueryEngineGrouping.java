@@ -1,7 +1,7 @@
 package me.paulbares;
 
 import me.paulbares.query.ComparisonMethod;
-import me.paulbares.query.QueryEngine;
+import me.paulbares.query.spark.SparkQueryEngine;
 import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -14,11 +14,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static me.paulbares.Datastore.MAIN_SCENARIO_NAME;
+import static me.paulbares.SparkDatastore.MAIN_SCENARIO_NAME;
 
 public class TestQueryEngineGrouping {
 
-  static Datastore ds;
+  static SparkDatastore ds;
 
   @BeforeAll
   static void setup() {
@@ -26,7 +26,7 @@ public class TestQueryEngineGrouping {
     Field category = new Field("category", String.class);
     Field price = new Field("price", double.class);
     Field qty = new Field("quantity", int.class);
-    ds = new Datastore(List.of(ean, category, price, qty));
+    ds = new SparkDatastore(List.of(ean, category, price, qty));
 
     ds.load(MAIN_SCENARIO_NAME, List.of(
             new Object[]{"bottle", "drink", 2d, 10},
@@ -60,7 +60,7 @@ public class TestQueryEngineGrouping {
             .groups(groups);
 
     { // ABSOLUTE
-      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(query.comparisonMethod(ComparisonMethod.ABSOLUTE));
+      Dataset<Row> dataset = new SparkQueryEngine(ds).executeGrouping(query.comparisonMethod(ComparisonMethod.ABSOLUTE));
       Assertions.assertThat(dataset.columns()).containsExactly(
               "group", "scenario", "abs. diff. sum(price)", "abs. diff. sum(quantity)");
 
@@ -76,7 +76,7 @@ public class TestQueryEngineGrouping {
     }
 
     { // RELATIVE
-      Dataset<Row> dataset = new QueryEngine(ds).executeGroupingQuery(query.comparisonMethod(ComparisonMethod.RELATIVE));
+      Dataset<Row> dataset = new SparkQueryEngine(ds).executeGrouping(query.comparisonMethod(ComparisonMethod.RELATIVE));
       Assertions.assertThat(dataset.columns()).containsExactly(
               "group", "scenario", "rel. diff. sum(price)", "rel. diff. sum(quantity)");
 

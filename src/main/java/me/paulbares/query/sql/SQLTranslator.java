@@ -1,6 +1,7 @@
-package me.paulbares.query;
+package me.paulbares.query.sql;
 
-import me.paulbares.Datastore;
+import me.paulbares.SparkDatastore;
+import me.paulbares.query.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class SQLTranslator {
     statement.append("select ");
     statement.append(selects.stream().collect(Collectors.joining(", ")));
     statement.append(" from ");
-    statement.append(Datastore.BASE_STORE_NAME);
+    statement.append(SparkDatastore.BASE_STORE_NAME);
     if (!conditions.isEmpty()) {
       statement.append(" where ").append(conditions.stream().collect(Collectors.joining(" and ")));
     }

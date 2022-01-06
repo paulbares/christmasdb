@@ -1,11 +1,11 @@
 package me.paulbares;
 
 import me.paulbares.query.Query;
-import me.paulbares.query.SQLTranslator;
+import me.paulbares.query.sql.SQLTranslator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static me.paulbares.Datastore.BASE_STORE_NAME;
+import static me.paulbares.SparkDatastore.BASE_STORE_NAME;
 
 public class TestSQLTranslator {
 

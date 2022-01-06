@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static me.paulbares.Datastore.MAIN_SCENARIO_NAME;
+import static me.paulbares.SparkDatastore.MAIN_SCENARIO_NAME;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -35,7 +35,7 @@ public class QueryControllerTest {
             .addWildcardCoordinate("scenario")
             .addAggregatedMeasure("marge", "sum")
             .addExpressionMeasure("indice-prix", "100 * sum(`numerateur-indice`) / sum(`score-visi`)");
-    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY)
+    mvc.perform(MockMvcRequestBuilders.post(SparkQueryController.MAPPING_QUERY)
                     .content(JacksonUtil.serialize(query))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -57,7 +57,7 @@ public class QueryControllerTest {
             .addWildcardCoordinate("scenario")
             .withTotals()
             .addAggregatedMeasure("marge", "sum");
-    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY)
+    mvc.perform(MockMvcRequestBuilders.post(SparkQueryController.MAPPING_QUERY)
                     .content(JacksonUtil.serialize(query))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -82,7 +82,7 @@ public class QueryControllerTest {
             .addWildcardCoordinate("scenario")
             .addAggregatedMeasure("marge", "sum")
             .addExpressionMeasure("indice-prix", "100 * sum(`numerateur-indice`) / sum(`score-visi`)");
-    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY)
+    mvc.perform(MockMvcRequestBuilders.post(SparkQueryController.MAPPING_QUERY)
                     .content(JacksonUtil.serialize(query))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -102,11 +102,11 @@ public class QueryControllerTest {
 
   @Test
   void testMetadata() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.get(QueryController.MAPPING_METADATA))
+    mvc.perform(MockMvcRequestBuilders.get(SparkQueryController.MAPPING_METADATA))
             .andExpect(result -> {
               String contentAsString = result.getResponse().getContentAsString();
               Map objects = JacksonUtil.mapper.readValue(contentAsString, Map.class);
-              Assertions.assertThat((List) objects.get(QueryController.METADATA_FIELDS_KEY)).containsExactlyInAnyOrder(
+              Assertions.assertThat((List) objects.get(SparkQueryController.METADATA_FIELDS_KEY)).containsExactlyInAnyOrder(
                       Map.of("name", "ean", "type", "string"),
                       Map.of("name", "pdv", "type", "string"),
                       Map.of("name", "categorie", "type", "string"),
@@ -123,7 +123,7 @@ public class QueryControllerTest {
                       Map.of("name", "indice-prix", "type", "double"),
                       Map.of("name", "scenario", "type", "string")
               );
-              Assertions.assertThat((List) objects.get(QueryController.METADATA_AGG_FUNC_KEY)).containsExactlyInAnyOrder(QueryController.SUPPORTED_AGG_FUNCS.toArray(new String[0]));
+              Assertions.assertThat((List) objects.get(SparkQueryController.METADATA_AGG_FUNC_KEY)).containsExactlyInAnyOrder(SparkQueryController.SUPPORTED_AGG_FUNCS.toArray(new String[0]));
             });
   }
 
@@ -140,7 +140,7 @@ public class QueryControllerTest {
             .addAggregatedMeasure("marge", "sum")
             .addExpressionMeasure("indice-prix", "100 * sum(`numerateur-indice`) / sum(`score-visi`)");
 
-    mvc.perform(MockMvcRequestBuilders.post(QueryController.MAPPING_QUERY_GROUPING)
+    mvc.perform(MockMvcRequestBuilders.post(SparkQueryController.MAPPING_QUERY_GROUPING)
                     .content(JacksonUtil.serialize(query))
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())

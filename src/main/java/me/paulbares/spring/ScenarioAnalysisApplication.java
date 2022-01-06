@@ -1,9 +1,9 @@
 package me.paulbares.spring;
 
 import me.paulbares.DataLoader;
-import me.paulbares.Datastore;
+import me.paulbares.SparkDatastore;
 import me.paulbares.jackson.JacksonUtil;
-import me.paulbares.query.QueryEngine;
+import me.paulbares.query.spark.SparkQueryEngine;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -17,9 +17,9 @@ public class ScenarioAnalysisApplication {
   }
 
   @Bean
-  public QueryEngine queryEngine() {
-    Datastore ds = DataLoader.createTestDatastoreWithData();
-    return new QueryEngine(ds);
+  public SparkQueryEngine queryEngine() {
+    SparkDatastore ds = DataLoader.createTestDatastoreWithData();
+    return new SparkQueryEngine(ds);
   }
 
   @Bean

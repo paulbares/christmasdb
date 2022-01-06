@@ -1,6 +1,10 @@
-package me.paulbares.query;
+package me.paulbares.query.spark;
 
-import me.paulbares.Datastore;
+import me.paulbares.SparkDatastore;
+import me.paulbares.query.ComparisonMethod;
+import me.paulbares.query.Query;
+import me.paulbares.query.sql.SQLTranslator;
+import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -17,32 +21,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class QueryEngine {
+public class SparkQueryEngine {
 
-  private static final Logger LOGGER = Logger.getLogger(QueryEngine.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(SparkQueryEngine.class.getName());
 
-  public final Datastore datastore;
+  public final SparkDatastore datastore;
 
-  public QueryEngine(Datastore datastore) {
+  public SparkQueryEngine(SparkDatastore datastore) {
     this.datastore = datastore;
   }
 
-  public Dataset<Row> executeSparkSql(Query query) {
+  public Dataset<Row> execute(Query query) {
     LOGGER.info("Executing " + query);
     String sql = SQLTranslator.translate(query);
     LOGGER.info("Translated query #" + query.id + " to " + sql);
-    datastore.get().createOrReplaceTempView(Datastore.BASE_STORE_NAME);
+    datastore.get().createOrReplaceTempView(SparkDatastore.BASE_STORE_NAME);
     return datastore.spark.sql(sql);
   }
 
-  public Dataset<Row> executeGroupingQuery(ScenarioGroupingQuery query) {
+  public Dataset<Row> executeGrouping(ScenarioGroupingQuery query) {
     ComparisonMethod comparisonMethod = query.comparisonMethod;
     Map<String, List<String>> groups = query.groups;
 
     Query q = new Query().addWildcardCoordinate("scenario");
     q.measures.addAll(query.measures);
 
-    Dataset<Row> raw = executeSparkSql(q);
+    Dataset<Row> raw = execute(q);
 
     Map<String, Row> rowByScenario = new HashMap<>();
     Iterator<Row> rowIterator = raw.toLocalIterator();
