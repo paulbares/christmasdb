@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SparkDatastore {
+public class SparkDatastore implements Datastore {
 
   static {
     Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -48,11 +48,13 @@ public class SparkDatastore {
 
   }
 
+  @Override
   public StructField[] getFields() {
     Dataset<Row> base = this.m.get(MAIN_SCENARIO_NAME);
     return base.schema().fields();
   }
 
+  @Override
   public void load(String scenario, List<Object[]> tuples) {
     List<Row> rows = tuples.stream().map(RowFactory::create).toList();
     Dataset<Row> dataFrame = this.spark.createDataFrame(rows, schema);// to load pojo
@@ -63,10 +65,6 @@ public class SparkDatastore {
     if (previous != null) {
       throw new RuntimeException("Already existing dataset for scenario " + scenario);
     }
-  }
-
-  public void show(String scenario) {
-    this.m.get(scenario).withColumn("scenario", functions.lit(scenario)).show(100);
   }
 
   public Dataset<Row> get() {

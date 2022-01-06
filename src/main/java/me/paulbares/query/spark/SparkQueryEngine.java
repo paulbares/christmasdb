@@ -3,6 +3,7 @@ package me.paulbares.query.spark;
 import me.paulbares.SparkDatastore;
 import me.paulbares.query.ComparisonMethod;
 import me.paulbares.query.Query;
+import me.paulbares.query.QueryEngine;
 import me.paulbares.query.sql.SQLTranslator;
 import me.paulbares.query.ScenarioGroupingQuery;
 import org.apache.spark.sql.Dataset;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class SparkQueryEngine {
+public class SparkQueryEngine implements QueryEngine {
 
   private static final Logger LOGGER = Logger.getLogger(SparkQueryEngine.class.getName());
 
@@ -31,6 +32,7 @@ public class SparkQueryEngine {
     this.datastore = datastore;
   }
 
+  @Override
   public Dataset<Row> execute(Query query) {
     LOGGER.info("Executing " + query);
     String sql = SQLTranslator.translate(query);
