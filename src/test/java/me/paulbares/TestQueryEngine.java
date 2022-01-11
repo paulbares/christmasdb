@@ -21,10 +21,10 @@ public class TestQueryEngine {
 
   @BeforeAll
   static void setup() {
-    Field ean = new Field("ean", String.class);
-    Field category = new Field("category", String.class);
-    Field price = new Field("price", double.class);
-    Field qty = new Field("quantity", int.class);
+    CustomField ean = new CustomField("ean", String.class);
+    CustomField category = new CustomField("category", String.class);
+    CustomField price = new CustomField("price", double.class);
+    CustomField qty = new CustomField("quantity", int.class);
     ds = new SparkDatastore(List.of(ean, category, price, qty));
 
     ds.load(MAIN_SCENARIO_NAME, List.of(

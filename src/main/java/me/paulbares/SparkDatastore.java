@@ -26,9 +26,6 @@ public class SparkDatastore implements Datastore {
     root.setLevel(Level.INFO);
   }
 
-  public static final String BASE_STORE_NAME = "base_store";
-  public static final String MAIN_SCENARIO_NAME = "base";
-
   private final Map<String, Dataset<Row>> m = new HashMap<>();
 
   public final StructType schema;
@@ -37,8 +34,8 @@ public class SparkDatastore implements Datastore {
 
   private Column[] columns;
 
-  public SparkDatastore(List<Field> fields, Column... columns) {
-    this.schema = createSchema(fields.toArray(new Field[0]));
+  public SparkDatastore(List<CustomField> fields, Column... columns) {
+    this.schema = createSchema(fields.toArray(new CustomField[0]));
     this.spark = SparkSession
             .builder()
             .appName("Java Spark SQL Example")
@@ -88,9 +85,9 @@ public class SparkDatastore implements Datastore {
     return union;
   }
 
-  private static StructType createSchema(Field... fields) {
+  private static StructType createSchema(CustomField... fields) {
     StructType schema = new StructType();
-    for (Field field : fields) {
+    for (CustomField field : fields) {
       DataType type;
       if (field.type().equals(String.class)) {
         type = DataTypes.StringType;

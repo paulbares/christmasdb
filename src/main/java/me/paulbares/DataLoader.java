@@ -36,16 +36,16 @@ public class DataLoader {
   }
 
   public static SparkDatastore createTestDatastoreWithData() {
-    var ean = new Field("ean", String.class);
-    var pdv = new Field("pdv", String.class);
-    var categorie = new Field("categorie", String.class);
-    var type = new Field("type-marque", String.class);
-    var sensi = new Field("sensibilite", String.class);
-    var quantite = new Field("quantite", Integer.class);
-    var prix = new Field("prix", Double.class);
-    var achat = new Field("achat", Integer.class);
-    var score = new Field("score-visi", Integer.class);
-    var minMarche = new Field("min-marche", Double.class);
+    var ean = new CustomField("ean", String.class);
+    var pdv = new CustomField("pdv", String.class);
+    var categorie = new CustomField("categorie", String.class);
+    var type = new CustomField("type-marque", String.class);
+    var sensi = new CustomField("sensibilite", String.class);
+    var quantite = new CustomField("quantite", Integer.class);
+    var prix = new CustomField("prix", Double.class);
+    var achat = new CustomField("achat", Integer.class);
+    var score = new CustomField("score-visi", Integer.class);
+    var minMarche = new CustomField("min-marche", Double.class);
 
     SparkDatastore datastore = new SparkDatastore(
             List.of(ean, pdv, categorie, type, sensi, quantite, prix, achat, score, minMarche),
