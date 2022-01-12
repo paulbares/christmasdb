@@ -11,7 +11,7 @@ import org.apache.arrow.vector.UInt4Vector;
 import org.apache.arrow.vector.UInt8Vector;
 import org.apache.arrow.vector.ValueVector;
 
-public abstract class ValueVectorAccessor {
+public abstract class ValueVectorHandler {
 
   public abstract ValueVector getValueVector();
 
@@ -43,11 +43,11 @@ public abstract class ValueVectorAccessor {
     throw new UnsupportedOperationException();
   }
 
-  public static class UInt1VectorAccessor extends ValueVectorAccessor {
+  public static class UInt1VectorHandler extends ValueVectorHandler {
 
     protected final UInt1Vector vector;
 
-    public UInt1VectorAccessor(UInt1Vector vector) {
+    public UInt1VectorHandler(UInt1Vector vector) {
       this.vector = vector;
     }
 
@@ -77,11 +77,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class IntVectorAccessor extends ValueVectorAccessor {
+  public static class IntVectorHandler extends ValueVectorHandler {
 
     protected final IntVector vector;
 
-    public IntVectorAccessor(IntVector vector) {
+    public IntVectorHandler(IntVector vector) {
       this.vector = vector;
     }
 
@@ -111,11 +111,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class UInt2VectorAccessor extends ValueVectorAccessor {
+  public static class UInt2VectorHandler extends ValueVectorHandler {
 
     protected final UInt2Vector vector;
 
-    public UInt2VectorAccessor(UInt2Vector vector) {
+    public UInt2VectorHandler(UInt2Vector vector) {
       this.vector = vector;
     }
 
@@ -145,11 +145,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class UInt4VectorAccessor extends ValueVectorAccessor {
+  public static class UInt4VectorHandler extends ValueVectorHandler {
 
     protected final UInt4Vector vector;
 
-    public UInt4VectorAccessor(UInt4Vector vector) {
+    public UInt4VectorHandler(UInt4Vector vector) {
       this.vector = vector;
     }
 
@@ -179,11 +179,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class UInt8VectorAccessor extends ValueVectorAccessor {
+  public static class UInt8VectorHandler extends ValueVectorHandler {
 
     protected final UInt8Vector vector;
 
-    public UInt8VectorAccessor(UInt8Vector vector) {
+    public UInt8VectorHandler(UInt8Vector vector) {
       this.vector = vector;
     }
 
@@ -213,11 +213,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class TinyIntVectorAccessor extends ValueVectorAccessor {
+  public static class TinyIntVectorHandler extends ValueVectorHandler {
 
     protected final TinyIntVector vector;
 
-    public TinyIntVectorAccessor(TinyIntVector vector) {
+    public TinyIntVectorHandler(TinyIntVector vector) {
       this.vector = vector;
     }
 
@@ -247,11 +247,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class SmallIntVectorAccessor extends ValueVectorAccessor {
+  public static class SmallIntVectorHandler extends ValueVectorHandler {
 
     protected final SmallIntVector vector;
 
-    public SmallIntVectorAccessor(SmallIntVector vector) {
+    public SmallIntVectorHandler(SmallIntVector vector) {
       this.vector = vector;
     }
 
@@ -281,11 +281,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class BigIntVectorAccessor extends ValueVectorAccessor {
+  public static class BigIntVectorHandler extends ValueVectorHandler {
 
     protected final BigIntVector vector;
 
-    public BigIntVectorAccessor(BigIntVector vector) {
+    public BigIntVectorHandler(BigIntVector vector) {
       this.vector = vector;
     }
 
@@ -300,11 +300,11 @@ public abstract class ValueVectorAccessor {
     }
   }
 
-  public static class Float8VectorAccessor extends ValueVectorAccessor {
+  public static class Float8VectorHandler extends ValueVectorHandler {
 
     protected final Float8Vector vector;
 
-    public Float8VectorAccessor(Float8Vector vector) {
+    public Float8VectorHandler(Float8Vector vector) {
       this.vector = vector;
     }
 

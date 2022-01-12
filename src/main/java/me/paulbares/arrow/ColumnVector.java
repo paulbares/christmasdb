@@ -29,7 +29,7 @@ public class ColumnVector {
 
   protected final BufferAllocator allocator;
 
-  protected ValueVectorAccessor[] accessors;
+  protected ValueVectorHandler[] accessors;
 
   protected final Field field;
   protected final int log2Size;
@@ -45,7 +45,7 @@ public class ColumnVector {
     this.vectorSize = vectorSize;
     this.log2Size = Integer.numberOfTrailingZeros(vectorSize);
     this.sizeMinusOne = vectorSize - 1;
-    this.accessors = new ValueVectorAccessor[]{createAccessor(field)};
+    this.accessors = new ValueVectorHandler[]{createAccessor(field)};
   }
 
   public static boolean isPowerOfTwo(int number) {
@@ -62,31 +62,31 @@ public class ColumnVector {
     this.accessors[this.accessors.length - 1].getValueVector().setValueCount(nbOfTuples >> this.log2Size); // for the last element
   }
 
-  private ValueVectorAccessor newAccessor(ValueVector vector) {
+  private ValueVectorHandler newAccessor(ValueVector vector) {
     if (vector instanceof IntVector v) {
-      return new ValueVectorAccessor.IntVectorAccessor(v);
+      return new ValueVectorHandler.IntVectorHandler(v);
     } else if (vector instanceof UInt1Vector v) {
-      return new ValueVectorAccessor.UInt1VectorAccessor(v);
+      return new ValueVectorHandler.UInt1VectorHandler(v);
     } else if (vector instanceof UInt2Vector v) {
-      return new ValueVectorAccessor.UInt2VectorAccessor(v);
+      return new ValueVectorHandler.UInt2VectorHandler(v);
     } else if (vector instanceof UInt4Vector v) {
-      return new ValueVectorAccessor.UInt4VectorAccessor(v);
+      return new ValueVectorHandler.UInt4VectorHandler(v);
     } else if (vector instanceof UInt8Vector v) {
-      return new ValueVectorAccessor.UInt8VectorAccessor(v);
+      return new ValueVectorHandler.UInt8VectorHandler(v);
     } else if (vector instanceof TinyIntVector v) {
-      return new ValueVectorAccessor.TinyIntVectorAccessor(v);
+      return new ValueVectorHandler.TinyIntVectorHandler(v);
     } else if (vector instanceof SmallIntVector v) {
-      return new ValueVectorAccessor.SmallIntVectorAccessor(v);
+      return new ValueVectorHandler.SmallIntVectorHandler(v);
     } else if (vector instanceof BigIntVector v) {
-      return new ValueVectorAccessor.BigIntVectorAccessor(v);
+      return new ValueVectorHandler.BigIntVectorHandler(v);
     } else if (vector instanceof Float8Vector v) {
-      return new ValueVectorAccessor.Float8VectorAccessor(v);
+      return new ValueVectorHandler.Float8VectorHandler(v);
     } else {
       throw new RuntimeException(String.format("Unsupported field %s", vector.getField()));
     }
   }
 
-  protected ValueVectorAccessor createAccessor(Field field) {
+  protected ValueVectorHandler createAccessor(Field field) {
     ArrowType type = field.getType();
     FieldVector v;
     if (!(type instanceof ArrowType.Int
@@ -120,10 +120,10 @@ public class ColumnVector {
     return this.accessors[bucket].getObject(offset);
   }
 
-  private ValueVectorAccessor getBucket(int bucket) {
-    ValueVectorAccessor v;
+  private ValueVectorHandler getBucket(int bucket) {
+    ValueVectorHandler v;
     if (bucket >= this.accessors.length) {
-      ValueVectorAccessor[] newFieldVectors = new ValueVectorAccessor[this.accessors.length + 1];
+      ValueVectorHandler[] newFieldVectors = new ValueVectorHandler[this.accessors.length + 1];
       System.arraycopy(this.accessors, 0, newFieldVectors, 0, this.accessors.length);
       newFieldVectors[this.accessors.length] = (v = createAccessor(this.field));
       this.accessors = newFieldVectors;
