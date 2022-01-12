@@ -24,6 +24,16 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
             <version>${arrow.version}</version>
@@ -86,11 +96,6 @@
                     <groupId>org.apache.arrow</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-kotlin</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -157,7 +162,7 @@
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <!-- See here https://www.jacoco.org/jacoco/trunk/doc/prepare-agent-mojo.html to understand why `@{argLine}` is needed-->
-                    <argLine>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</argLine>
+                    <argLine>--add-opens java.base/sun.nio.ch=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -165,10 +170,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <compilerArgs>
-                            <arg>--add-opens</arg>
-                            <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                            <arg>--add-exports</arg>
-                            <arg>java.base/jdk.internal.util=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/jdk.internal.util=ALL-UNNAMED</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
