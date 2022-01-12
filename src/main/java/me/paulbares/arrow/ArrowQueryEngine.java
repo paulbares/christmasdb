@@ -1,20 +1,25 @@
 package me.paulbares.arrow;
 
+import me.paulbares.aggregation.Aggregator;
+import me.paulbares.aggregation.AggregatorFactory;
 import me.paulbares.dictionary.Dictionary;
+import me.paulbares.dictionary.PointDictionary;
+import me.paulbares.query.AggregatedMeasure;
+import me.paulbares.query.PointListAggregateResult;
 import me.paulbares.query.Query;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.holders.IntHolder;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ArrowQueryEngine {
 
@@ -24,70 +29,119 @@ public class ArrowQueryEngine {
     this.store = store;
   }
 
-  public void execute(Query query) {
-    int[] pattern = new int[query.coordinates.size()];
-//    Arrays.fill(pattern, -1);
+  public PointListAggregateResult execute(Query query) {
+    Map<String, MutableIntSet> acceptedValuesByField = new LinkedHashMap<>();
 
-//    int[] indices = new int[1];
-//    MutableIntList l = new IntArrayList();
-    Map<Field, MutableIntSet> acceptedValuesByField = new HashMap<>();
+    List<ColumnVector> points = new ArrayList<>();
     query.coordinates.forEach((field, values) -> {
       if (values == null) {
-        // wildcard
+        // wildcard, all values are accepted
+        points.add(this.store.fieldVectorsMap.get(field));
       } else {
+        points.add(this.store.fieldVectorsMap.get(field));
         for (String value : values) {
           Field f = Schema.findField(this.store.fields, field);
-          Dictionary<Object> dictionary = this.store.dictionaryMap.get(f);
+          Dictionary<Object> dictionary = this.store.dictionaryMap.get(f.getName());
           int position = dictionary.getPosition(value);
           if (position >= 0) {
-            acceptedValuesByField.computeIfAbsent(f, key -> new IntHashSet()).add(position);
+            acceptedValuesByField.computeIfAbsent(f.getName(), key -> new IntHashSet()).add(position);
           }
         }
       }
     });
 
+    List<Aggregator> aggregators = new ArrayList<>();
+    query.measures.forEach(measure -> {
+      if (measure instanceof AggregatedMeasure agg) {
+        aggregators.add(AggregatorFactory.create(
+                this.store.allocator,
+                this.store.fieldVectorsMap.get(agg.field),
+                agg.aggregationFunction,
+                agg.sqlExpression()));
+      } else {
+        throw new RuntimeException("Not implemented yet");
+      }
+    });
+
     RoaringBitmap matchRows = null;
-
-    // START handle simple condition
-    if (!acceptedValuesByField.isEmpty()) {
-      List<Field> fields = new ArrayList<>(acceptedValuesByField.keySet());
-      FieldVector[][] vectors = new FieldVector[fields.size()][];
-      for (int i = 0; i < fields.size(); i++) {
-//        vectors[i] = this.store.fieldVectorsMap.get(fields.get(i));
-      }
-
-      IntSet values = acceptedValuesByField.get(fields.get(0));
-      // Init the bitmap for the first time
-      IntHolder intHolder = new IntHolder();
-      for (int row = 0; row < this.store.rowCount; row++) {
-        if (matchRows == null) {
-          matchRows = new RoaringBitmap();
-        }
-
-//        int bucket = row >> this.store.logSize;
-//        FieldReader reader = vectors[0][bucket].getReader();
-//        int offset = row & this.store.sizeMinus1;
-
-//        reader.setPosition(offset);
-//        reader.read(intHolder);
-        if (values.contains(intHolder.value)) {
-          matchRows.add(row);
-        }
-      }
-
-//      for (int i = 1; i < chunks.length; i++) {
-//        IntSet v = acceptedValuesByField.get(fields.get(i));
-//        RoaringBitmap tmp = new RoaringBitmap();
-//        // Iterate over the bitmap
-//        final int j = i;
-//        matchRows.forEach((org.roaringbitmap.IntConsumer) row -> {
-//          if (v.contains(chunks[j].readInt(row))) {
-//            tmp.add(row);
-//          }
-//        });
-//        matchRows.and(tmp);
-//      }
+    if (acceptedValuesByField.isEmpty()) {
+      // All lines are accepted
+      matchRows = null;
+    } else {
+      // Take the first field that will be used as reference to build the first version of matching rows. Currently,
+      // the same field (first one) is chosen, but we can imagine having a proper algorithm to choose it and try to
+      // reduce the number of bit set into the map to accelerate any subsequent operations.
+      matchRows = initializeBitmap(acceptedValuesByField);
+      applyConditionsOnBitmap(matchRows, acceptedValuesByField);
     }
-    // END handle simple condition
+
+    PointDictionary pointDictionary = new PointDictionary(points.size());
+
+    IntConsumer rowAggregator = row -> {
+      // TODO do by batch? to read the same column multiple times
+      // Fill the buffer
+      int j = 0;
+      int[] buffer = new int[points.size()];
+      for (ColumnVector c : points) {
+        buffer[j++] = c.getInt(row);
+      }
+
+      int destinationRow = pointDictionary.map(buffer);
+      // And then aggregate
+      boolean check = false; // to do it only once
+      for (Aggregator aggregator : aggregators) {
+        if (!check){
+          aggregator.getDestination().ensureCapacity(destinationRow);
+        }
+
+        aggregator.aggregate(row, destinationRow);
+      }
+    };
+
+    if (matchRows != null) {
+      matchRows.forEach(rowAggregator);
+    } else {
+      for (int i = 0; i < this.store.rowCount; i++) {
+        rowAggregator.accept(i);
+      }
+    }
+
+    List<String> pointNames = points.stream().map(v -> v.getField().getName()).collect(Collectors.toList());
+    return new PointListAggregateResult(
+            pointDictionary,
+            pointNames,
+            pointNames.stream().map(pointName -> this.store.dictionaryMap.get(pointName)).collect(Collectors.toList()),
+            aggregators.stream().map(Aggregator::getDestination).collect(Collectors.toList()));
+  }
+
+  protected RoaringBitmap initializeBitmap(Map<String, MutableIntSet> acceptedValuesByField) {
+    RoaringBitmap matchRows = new RoaringBitmap();
+    List<String> fields = new ArrayList<>(acceptedValuesByField.keySet());
+    String refField = fields.get(0);
+    IntSet refValues = acceptedValuesByField.get(refField);
+    ColumnVector refColumnVector = this.store.fieldVectorsMap.get(refField);
+    for (int row = 0; row < this.store.rowCount; row++) {
+      if (refValues.contains(refColumnVector.getInt(row))) {
+        matchRows.add(row);
+      }
+    }
+    return matchRows;
+  }
+
+  protected void applyConditionsOnBitmap(RoaringBitmap matchRows, Map<String, MutableIntSet> acceptedValuesByField) {
+    List<String> fields = new ArrayList<>(acceptedValuesByField.keySet());
+    for (int i = 1; i < fields.size(); i++) {
+      String field = fields.get(i);
+      IntSet values = acceptedValuesByField.get(field);
+      ColumnVector vector = this.store.fieldVectorsMap.get(field);
+
+      RoaringBitmap tmp = new RoaringBitmap();
+      matchRows.forEach((org.roaringbitmap.IntConsumer) row -> {
+        if (values.contains(vector.getInt(row))) {
+          tmp.add(row);
+        }
+      });
+      matchRows.and(tmp);
+    }
   }
 }

@@ -16,31 +16,35 @@ public abstract class ValueVectorHandler {
   public abstract ValueVector getValueVector();
 
   public int getInt(int index) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public void writeInt(int index, int value) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public Object getObject(int index) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public void writeObject(int index, Object value) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public long getLong(int index) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
+  }
+
+  public void writeLong(int index, long value) {
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public double getDouble(int index) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public void writeDouble(int index, double value) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(this.getClass().getName());
   }
 
   public static class UInt1VectorHandler extends ValueVectorHandler {
@@ -297,6 +301,21 @@ public abstract class ValueVectorHandler {
     @Override
     public long getLong(int index) {
       return this.vector.get(index);
+    }
+
+    @Override
+    public void writeLong(int index, long value) {
+      this.vector.set(index, value);
+    }
+
+    @Override
+    public Object getObject(int index) {
+      return getLong(index);
+    }
+
+    @Override
+    public void writeObject(int index, Object value) {
+      writeLong(index, (Long) value);
     }
   }
 

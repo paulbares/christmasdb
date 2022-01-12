@@ -162,7 +162,14 @@
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <!-- See here https://www.jacoco.org/jacoco/trunk/doc/prepare-agent-mojo.html to understand why `@{argLine}` is needed-->
-                    <argLine>--add-opens java.base/sun.nio.ch=ALL-UNNAMED</argLine>
+                    <argLine>
+                        @{argLine}
+                        -Darrow.enable_unsafe_memory_access=true
+                        -Darrow.enable_null_check_for_get=false
+                        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+                        --add-opens java.base/java.nio=ALL-UNNAMED
+                        --add-exports java.base/jdk.internal.util=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>

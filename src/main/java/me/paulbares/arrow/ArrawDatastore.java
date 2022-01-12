@@ -39,7 +39,7 @@ public class ArrawDatastore implements Datastore {
       if (field.getType() instanceof ArrowType.Utf8) {
         // Dictionarized the field
         this.dictionaryMap.put(field.getName(), new HashMapDictionary<>());
-        // FIXME becareful cause f != field
+        // FIXME be careful cause f != field
         f = new Field(field.getName(), new FieldType(field.isNullable(), Types.MinorType.INT.getType(), null), null);
       }
       this.fieldVectorsMap.put(f.getName(), new ColumnVector(allocator, f, vectorSize));
@@ -104,7 +104,7 @@ public class ArrawDatastore implements Datastore {
     return sb.toString();
   }
 
-  private void printRow(StringBuilder sb, List<Object> row) {
+  public static void printRow(StringBuilder sb, List<Object> row) {
     boolean first = true;
     for (Object v : row) {
       if (first) {

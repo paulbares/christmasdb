@@ -16,6 +16,7 @@ import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 
+// FIXME should it maintain the nb of line written?
 public class ColumnVector {
 
   /**
@@ -36,6 +37,10 @@ public class ColumnVector {
   protected final int sizeMinusOne;
   protected final int vectorSize;
 
+  public ColumnVector(BufferAllocator allocator, Field field) {
+    this(allocator, field, DEFAULT_VECTOR_SIZE);
+  }
+
   public ColumnVector(BufferAllocator allocator, Field field, int vectorSize) {
     if (!isPowerOfTwo(vectorSize)) {
       throw new IllegalArgumentException(vectorSize + "not a power of 2");
@@ -46,6 +51,10 @@ public class ColumnVector {
     this.log2Size = Integer.numberOfTrailingZeros(vectorSize);
     this.sizeMinusOne = vectorSize - 1;
     this.accessors = new ValueVectorHandler[]{createAccessor(field)};
+  }
+
+  public Field getField() {
+    return this.field;
   }
 
   public static boolean isPowerOfTwo(int number) {
@@ -101,11 +110,23 @@ public class ColumnVector {
   }
 
   public void writeInt(int index, int value) {
-    getBucket(index >> this.log2Size).writeInt(index & this.sizeMinusOne, value);
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].writeInt(index & this.sizeMinusOne, value);
+  }
+
+  public void writeLong(int index, long value) {
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].writeLong(index & this.sizeMinusOne, value);
+  }
+
+  public void writeDouble(int index, double value) {
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].writeDouble(index & this.sizeMinusOne, value);
   }
 
   public void writeObject(int index, Object value) {
-    getBucket(index >> this.log2Size).writeObject(index & this.sizeMinusOne, value);
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].writeObject(index & this.sizeMinusOne, value);
   }
 
   public int getInt(int index) {
@@ -114,22 +135,34 @@ public class ColumnVector {
     return this.accessors[bucket].getInt(offset);
   }
 
+  public long getLong(int index) {
+    int bucket = index >> this.log2Size;
+    int offset = index & this.sizeMinusOne;
+    return this.accessors[bucket].getLong(offset);
+  }
+
+  public double getDouble(int index) {
+    int bucket = index >> this.log2Size;
+    int offset = index & this.sizeMinusOne;
+    return this.accessors[bucket].getDouble(offset);
+  }
+
   public Object getObject(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getObject(offset);
   }
 
-  private ValueVectorHandler getBucket(int bucket) {
-    ValueVectorHandler v;
+  public void ensureCapacity(int targetCapacity) {
+    int bucket = targetCapacity >> this.log2Size;
     if (bucket >= this.accessors.length) {
-      ValueVectorHandler[] newFieldVectors = new ValueVectorHandler[this.accessors.length + 1];
+      // not big enough
+      ValueVectorHandler[] newFieldVectors = new ValueVectorHandler[bucket + 1];
       System.arraycopy(this.accessors, 0, newFieldVectors, 0, this.accessors.length);
-      newFieldVectors[this.accessors.length] = (v = createAccessor(this.field));
+      for (int i = this.accessors.length; i < bucket + 1; i++) {
+        newFieldVectors[i] = createAccessor(this.field);
+      }
       this.accessors = newFieldVectors;
-    } else {
-      v = this.accessors[bucket];
     }
-    return v;
   }
 }

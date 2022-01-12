@@ -51,9 +51,9 @@ public class PointDictionary {
     return this.pointLength;
   }
 
-//  public void forEach(PointProcedure procedure) {
-//    this.underlyingDic.forEachKeyValue((points, row) -> procedure.execute(points, row));
-//  }
+  public void forEach(PointProcedure procedure) {
+    this.underlyingDic.forEachKeyValue((points, row) -> procedure.execute(points, row));
+  }
 
   public int size() {
     return this.underlyingDic.size();
