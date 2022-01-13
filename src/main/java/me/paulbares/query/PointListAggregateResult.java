@@ -44,7 +44,7 @@ public class PointListAggregateResult implements QueryResult {
     if (position < 0) {
       return null;
     } else {
-      // FIXME aggregates is ignored right now
+      // FIXME aggregates arg is ignored right now
       List<Object> res = new ArrayList<>(this.aggregates.size());
       for (ColumnVector aggregate : this.aggregates) {
         res.add(aggregate.getObject(position));
@@ -64,8 +64,7 @@ public class PointListAggregateResult implements QueryResult {
     this.pointDictionary.forEach((points, row) -> {
       List<Object> r = new ArrayList<>(this.pointNames.size() + 1);
       for (int i = 0; i < points.length; i++) {
-        Object read = this.dictionaries.get(i).read(points[i]);
-        r.add(read);
+        r.add(this.dictionaries.get(i).read(points[i]));
       }
 
       for (ColumnVector aggregate : this.aggregates) {

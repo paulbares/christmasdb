@@ -32,13 +32,13 @@ public class ArrowQueryEngine {
   public PointListAggregateResult execute(Query query) {
     Map<String, MutableIntSet> acceptedValuesByField = new LinkedHashMap<>();
 
-    List<ColumnVector> points = new ArrayList<>();
+    List<ColumnVector> pointVectors = new ArrayList<>();
     query.coordinates.forEach((field, values) -> {
       if (values == null) {
         // wildcard, all values are accepted
-        points.add(this.store.fieldVectorsMap.get(field));
+        pointVectors.add(this.store.fieldVectorsMap.get(field));
       } else {
-        points.add(this.store.fieldVectorsMap.get(field));
+        pointVectors.add(this.store.fieldVectorsMap.get(field));
         for (String value : values) {
           Field f = Schema.findField(this.store.fields, field);
           Dictionary<Object> dictionary = this.store.dictionaryMap.get(f.getName());
@@ -75,14 +75,14 @@ public class ArrowQueryEngine {
       applyConditionsOnBitmap(matchRows, acceptedValuesByField);
     }
 
-    PointDictionary pointDictionary = new PointDictionary(points.size());
+    PointDictionary pointDictionary = new PointDictionary(pointVectors.size());
 
     IntConsumer rowAggregator = row -> {
       // TODO do by batch? to read the same column multiple times
       // Fill the buffer
       int j = 0;
-      int[] buffer = new int[points.size()];
-      for (ColumnVector c : points) {
+      int[] buffer = new int[pointVectors.size()];
+      for (ColumnVector c : pointVectors) {
         buffer[j++] = c.getInt(row);
       }
 
@@ -106,7 +106,7 @@ public class ArrowQueryEngine {
       }
     }
 
-    List<String> pointNames = points.stream().map(v -> v.getField().getName()).collect(Collectors.toList());
+    List<String> pointNames = pointVectors.stream().map(v -> v.getField().getName()).collect(Collectors.toList());
     return new PointListAggregateResult(
             pointDictionary,
             pointNames,
@@ -114,6 +114,9 @@ public class ArrowQueryEngine {
             aggregators.stream().map(Aggregator::getDestination).collect(Collectors.toList()));
   }
 
+  /**
+   * Creates the first {@link RoaringBitmap} to use. Current impl. takes the first element.
+   */
   protected RoaringBitmap initializeBitmap(Map<String, MutableIntSet> acceptedValuesByField) {
     RoaringBitmap matchRows = new RoaringBitmap();
     List<String> fields = new ArrayList<>(acceptedValuesByField.keySet());
@@ -128,6 +131,9 @@ public class ArrowQueryEngine {
     return matchRows;
   }
 
+  /**
+   * Edits the input bitmap by combining the other conditions.
+   */
   protected void applyConditionsOnBitmap(RoaringBitmap matchRows, Map<String, MutableIntSet> acceptedValuesByField) {
     List<String> fields = new ArrayList<>(acceptedValuesByField.keySet());
     for (int i = 1; i < fields.size(); i++) {
