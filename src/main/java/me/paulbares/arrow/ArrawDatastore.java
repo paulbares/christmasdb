@@ -77,11 +77,6 @@ public class ArrawDatastore implements Datastore {
     }
   }
 
-  @Override
-  public Field[] getFields() {
-    return this.fields.toArray(new Field[0]);
-  }
-
   public String contentToTSVString() {
     StringBuilder sb = new StringBuilder();
     List<Object> row = new ArrayList<>(this.fields.size() + 1);
