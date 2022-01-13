@@ -14,9 +14,7 @@ public class TestQueryS13n {
             .addCoordinates("city", "paris", "london")
             .addWildcardCoordinate("ean")
             .addAggregatedMeasure("price", "sum")
-            .addAggregatedMeasure("quantity", "sum")
-            .addExpressionMeasure("alias1", "firstMyExpression")
-            .addExpressionMeasure("alias2", "secondMyExpression");
+            .addAggregatedMeasure("quantity", "sum");
 
     String serialize = JacksonUtil.serialize(query);
     Query deserialize = JacksonUtil.deserialize(serialize, Query.class);

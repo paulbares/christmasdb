@@ -2,8 +2,6 @@ package me.paulbares.query;
 
 import java.util.Objects;
 
-import static me.paulbares.query.sql.SQLTranslator.escape;
-
 public class AggregatedMeasure implements Measure {
 
   public String field;
@@ -23,7 +21,7 @@ public class AggregatedMeasure implements Measure {
 
   @Override
   public String sqlExpression() {
-    return this.aggregationFunction + "(" + escape(this.field) + ")";
+    return this.aggregationFunction + "(" + this.field + ")";
   }
 
   @Override

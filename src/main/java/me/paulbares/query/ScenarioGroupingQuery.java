@@ -18,11 +18,6 @@ public class ScenarioGroupingQuery {
     return this;
   }
 
-  public ScenarioGroupingQuery addExpressionMeasure(String alias, String expression) {
-    this.measures.add(new ExpressionMeasure(alias, expression));
-    return this;
-  }
-
   public ScenarioGroupingQuery groups(Map<String, List<String>> groups) {
     this.groups = groups;
     return this;

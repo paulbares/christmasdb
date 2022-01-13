@@ -11,7 +11,6 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
-import org.apache.spark.sql.types.StructField;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,8 +78,8 @@ public class ArrawDatastore implements Datastore {
   }
 
   @Override
-  public StructField[] getFields() {
-    return new StructField[0];
+  public Field[] getFields() {
+    return this.fields.toArray(new Field[0]);
   }
 
   public String contentToTSVString() {
