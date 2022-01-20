@@ -19,7 +19,7 @@ public abstract class ValueVectorHandler {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
-  public void writeInt(int index, int value) {
+  public void setInt(int index, int value) {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
@@ -27,7 +27,7 @@ public abstract class ValueVectorHandler {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
-  public void writeObject(int index, Object value) {
+  public void setObject(int index, Object value) {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
@@ -35,7 +35,7 @@ public abstract class ValueVectorHandler {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
-  public void writeLong(int index, long value) {
+  public void setLong(int index, long value) {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
@@ -43,7 +43,7 @@ public abstract class ValueVectorHandler {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
-  public void writeDouble(int index, double value) {
+  public void setDouble(int index, double value) {
     throw new UnsupportedOperationException(this.getClass().getName());
   }
 
@@ -66,7 +66,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -76,8 +76,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -100,7 +100,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -110,8 +110,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -134,7 +134,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -144,8 +144,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -168,7 +168,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -178,8 +178,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -202,7 +202,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -212,8 +212,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -236,7 +236,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -246,8 +246,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -270,7 +270,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeInt(int index, int value) {
+    public void setInt(int index, int value) {
       this.vector.set(index, value);
     }
 
@@ -280,8 +280,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeInt(index, (int) value);
+    public void setObject(int index, Object value) {
+      setInt(index, (int) value);
     }
   }
 
@@ -304,7 +304,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeLong(int index, long value) {
+    public void setLong(int index, long value) {
       this.vector.set(index, value);
     }
 
@@ -314,8 +314,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeLong(index, (Long) value);
+    public void setObject(int index, Object value) {
+      setLong(index, (Long) value);
     }
   }
 
@@ -338,7 +338,7 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeDouble(int index, double value) {
+    public void setDouble(int index, double value) {
       this.vector.set(index, value);
     }
 
@@ -348,8 +348,8 @@ public abstract class ValueVectorHandler {
     }
 
     @Override
-    public void writeObject(int index, Object value) {
-      writeDouble(index, (double) value);
+    public void setObject(int index, Object value) {
+      setDouble(index, (double) value);
     }
   }
 }

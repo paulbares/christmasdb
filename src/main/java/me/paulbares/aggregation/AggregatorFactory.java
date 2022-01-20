@@ -38,6 +38,20 @@ public class AggregatorFactory {
     }
   }
 
+  public static Aggregator create(ColumnVector source, ColumnVector destination, String aggregationType) {
+    if (aggregationType.equals(SumAggregator.TYPE)) {
+      if (source.getField().getFieldType().getType() instanceof ArrowType.Int) {
+        return new SumAggregator.SumIntAggregator(source, destination);
+      } else if (source.getField().getFieldType().getType() instanceof ArrowType.FloatingPoint) {
+        return new SumAggregator.SumDoubleAggregator(source, destination);
+      } else {
+        throw new IllegalArgumentException(String.format("Unsupported input source type for %s, type: %s ", aggregationType, source.getField().getFieldType().getType()));
+      }
+    } else {
+      throw new IllegalArgumentException("Unsupported aggregation type " + aggregationType);
+    }
+  }
+
   public static ColumnVector createDoubleColumnVector(BufferAllocator allocator, String name) {
     return new ColumnVector(allocator, Field.nullable(name, Types.MinorType.FLOAT8.getType()));
   }

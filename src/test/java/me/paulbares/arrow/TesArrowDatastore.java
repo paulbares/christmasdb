@@ -1,7 +1,7 @@
 package me.paulbares.arrow;
 
+import me.paulbares.Datastore;
 import me.paulbares.dictionary.Dictionary;
-import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
@@ -18,7 +18,6 @@ public class TesArrowDatastore {
 
   @Test
   void testLoading() {
-    RootAllocator allocator = new RootAllocator();
     List<Field> fields = new ArrayList<>();
 
     int id = 0;
@@ -26,7 +25,7 @@ public class TesArrowDatastore {
     fields.add(new Field("age", new FieldType(false, new ArrowType.Int(8, false), null), null));
     fields.add(new Field("height", new FieldType(false, new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE), null), null));
 
-    ArrawDatastore datastore = new ArrawDatastore(fields, allocator, 4);
+    ArrawDatastore datastore = new ArrawDatastore(fields, new int[]{0}, 4);
 
     // Make sure there are more elements than the vector size
     List<Object[]> tuples = Arrays.asList(
@@ -42,7 +41,7 @@ public class TesArrowDatastore {
 
     for (int row = 0; row < tuples.size(); row++) {
       for (int i = 0; i < tuples.get(row).length; i++) {
-        Dictionary<Object> dic = datastore.dictionaryMap.get(fields.get(i).getName());
+        Dictionary<Object> dic = datastore.dictionaryProvider.get(fields.get(i).getName());
         if (dic != null) {
           Object read = dic.read(datastore.fieldVectorsMap.get(fields.get(i).getName()).getInt(row));
           Assertions.assertThat(read).isEqualTo(tuples.get(row)[i]);
@@ -51,5 +50,36 @@ public class TesArrowDatastore {
         }
       }
     }
+  }
+
+  @Test
+  void testLoadingScenarios() {
+    List<Field> fields = new ArrayList<>();
+    fields.add(new Field("id", new FieldType(false, new ArrowType.Int(8, true), null), null));
+    fields.add(new Field("product", new FieldType(false, new ArrowType.Utf8(), null), null));
+    fields.add(new Field("price", new FieldType(false, new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE), null), null));
+
+    ArrawDatastore datastore = new ArrawDatastore(fields, new int[]{0}, 4);
+
+    List<Object[]> tuples = Arrays.asList(
+            new Object[] {0, "syrup", 2d},
+            new Object[] {1, "tofu", 8d},
+            new Object[] {2, "mozzarella", 4d}
+    );
+    datastore.load(Datastore.MAIN_SCENARIO_NAME, tuples);
+
+    // Scenario 1
+    List<Object[]> tuplesScenario1 = Arrays.asList(
+            new Object[] {0, "syrup", 3d},
+            new Object[] {1, "tofu", 6d}
+    );
+    datastore.load("s1", tuplesScenario1);
+
+    // Scenario 2
+    List<Object[]> tuplesScenario2 = Arrays.asList(
+            new Object[] {0, "syrup", 4d},
+            new Object[] {2, "mozzarella", 5d}
+    );
+    datastore.load("s2", tuplesScenario2);
   }
 }

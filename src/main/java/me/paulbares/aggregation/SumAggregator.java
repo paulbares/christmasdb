@@ -64,7 +64,7 @@ public class SumAggregator {
     public void aggregate(int sourcePosition, int destinationPosition) {
       int a = this.source.getInt(sourcePosition);
       long b = this.destination.getLong(destinationPosition);
-      this.destination.writeLong(destinationPosition, a + b);
+      this.destination.setLong(destinationPosition, a + b);
     }
   }
 
@@ -98,7 +98,7 @@ public class SumAggregator {
     public void aggregate(int sourcePosition, int destinationPosition) {
       double a = this.source.getDouble(sourcePosition);
       double b = this.destination.getDouble(destinationPosition);
-      this.destination.writeDouble(destinationPosition, Double.sum(a, b));
+      this.destination.setDouble(destinationPosition, Double.sum(a, b));
     }
   }
 }

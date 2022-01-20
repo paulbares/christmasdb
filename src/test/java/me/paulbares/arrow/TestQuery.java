@@ -3,7 +3,6 @@ package me.paulbares.arrow;
 import me.paulbares.aggregation.SumAggregator;
 import me.paulbares.query.PointListAggregateResult;
 import me.paulbares.query.Query;
-import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
@@ -19,7 +18,6 @@ import java.util.List;
 
 public class TestQuery {
 
-  static RootAllocator allocator = new RootAllocator();
   static ArrawDatastore datastore;
 
   @BeforeAll
@@ -32,7 +30,7 @@ public class TestQuery {
     fields.add(new Field("age", new FieldType(false, new ArrowType.Int(8, false), null), null));
     fields.add(new Field("height", new FieldType(false, new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE), null), null));
 
-    datastore = new ArrawDatastore(fields, allocator, 4);
+    datastore = new ArrawDatastore(fields, new int[]{0}, 4);
 
     // Make sure there are more elements than the vector size
     List<Object[]> tuples = Arrays.asList(

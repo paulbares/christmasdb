@@ -37,6 +37,8 @@ public class ColumnVector {
   protected final int sizeMinusOne;
   protected final int vectorSize;
 
+  protected int cursor = 0;
+
   public ColumnVector(BufferAllocator allocator, Field field) {
     this(allocator, field, DEFAULT_VECTOR_SIZE);
   }
@@ -109,24 +111,44 @@ public class ColumnVector {
     return newAccessor(v);
   }
 
-  public void writeInt(int index, int value) {
-    ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeInt(index & this.sizeMinusOne, value);
+  /**
+   * TODO see if we create a dedicated AppendOnlyVector.
+   */
+  public int appendInt(int value) {
+    int c = this.cursor;
+    setInt(c, value);
+    this.cursor++;
+    return c;
   }
 
-  public void writeLong(int index, long value) {
+  public void setInt(int index, int value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeLong(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setInt(index & this.sizeMinusOne, value);
   }
 
-  public void writeDouble(int index, double value) {
+  public void setLong(int index, long value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeDouble(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setLong(index & this.sizeMinusOne, value);
   }
 
-  public void writeObject(int index, Object value) {
+  public void setDouble(int index, double value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeObject(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setDouble(index & this.sizeMinusOne, value);
+  }
+
+  /**
+   * TODO see if we create a dedicated class "AppendOnlyVector...".
+   */
+  public int appendObject(Object value) {
+    int c = this.cursor;
+    setObject(c, value);
+    this.cursor++;
+    return c;
+  }
+
+  public void setObject(int index, Object value) {
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].setObject(index & this.sizeMinusOne, value);
   }
 
   public int getInt(int index) {

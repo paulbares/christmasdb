@@ -41,7 +41,7 @@ public class ArrowQueryEngine {
         pointVectors.add(this.store.fieldVectorsMap.get(field));
         for (String value : values) {
           Field f = Schema.findField(this.store.fields, field);
-          Dictionary<Object> dictionary = this.store.dictionaryMap.get(f.getName());
+          Dictionary<Object> dictionary = this.store.dictionaryProvider.get(f.getName());
           int position = dictionary.getPosition(value);
           if (position >= 0) {
             acceptedValuesByField.computeIfAbsent(f.getName(), key -> new IntHashSet()).add(position);
@@ -57,13 +57,13 @@ public class ArrowQueryEngine {
                 this.store.allocator,
                 this.store.fieldVectorsMap.get(agg.field),
                 agg.aggregationFunction,
-                agg.sqlExpression()));
+                agg.alias()));
       } else {
         throw new RuntimeException("Not implemented yet");
       }
     });
 
-    RoaringBitmap matchRows = null;
+    RoaringBitmap matchRows;
     if (acceptedValuesByField.isEmpty()) {
       // All lines are accepted
       matchRows = null;
@@ -110,7 +110,7 @@ public class ArrowQueryEngine {
     return new PointListAggregateResult(
             pointDictionary,
             pointNames,
-            pointNames.stream().map(pointName -> this.store.dictionaryMap.get(pointName)).collect(Collectors.toList()),
+            pointNames.stream().map(pointName -> this.store.dictionaryProvider.get(pointName)).collect(Collectors.toList()),
             aggregators.stream().map(Aggregator::getDestination).collect(Collectors.toList()));
   }
 
