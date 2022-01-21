@@ -17,7 +17,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 
 // FIXME should it maintain the nb of line written?
-public class ColumnVector {
+public class ColumnVector implements ImmutableColumnVector{
 
   /**
    * MacOS: $sysctl hw.l1dcachesize to know the cache size. It is often better for applications to work in chunks
@@ -37,6 +37,8 @@ public class ColumnVector {
   protected final int sizeMinusOne;
   protected final int vectorSize;
 
+  protected int cursor = 0;
+
   public ColumnVector(BufferAllocator allocator, Field field) {
     this(allocator, field, DEFAULT_VECTOR_SIZE);
   }
@@ -53,6 +55,7 @@ public class ColumnVector {
     this.accessors = new ValueVectorHandler[]{createAccessor(field)};
   }
 
+  @Override
   public Field getField() {
     return this.field;
   }
@@ -109,44 +112,68 @@ public class ColumnVector {
     return newAccessor(v);
   }
 
-  public void writeInt(int index, int value) {
-    ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeInt(index & this.sizeMinusOne, value);
+  /**
+   * TODO see if we create a dedicated AppendOnlyVector.
+   */
+  public int appendInt(int value) {
+    int c = this.cursor;
+    setInt(c, value);
+    this.cursor++;
+    return c;
   }
 
-  public void writeLong(int index, long value) {
+  public void setInt(int index, int value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeLong(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setInt(index & this.sizeMinusOne, value);
   }
 
-  public void writeDouble(int index, double value) {
+  public void setLong(int index, long value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeDouble(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setLong(index & this.sizeMinusOne, value);
   }
 
-  public void writeObject(int index, Object value) {
+  public void setDouble(int index, double value) {
     ensureCapacity(index);
-    this.accessors[index >> this.log2Size].writeObject(index & this.sizeMinusOne, value);
+    this.accessors[index >> this.log2Size].setDouble(index & this.sizeMinusOne, value);
   }
 
+  /**
+   * TODO see if we create a dedicated class "AppendOnlyVector...".
+   */
+  public int appendObject(Object value) {
+    int c = this.cursor;
+    setObject(c, value);
+    this.cursor++;
+    return c;
+  }
+
+  public void setObject(int index, Object value) {
+    ensureCapacity(index);
+    this.accessors[index >> this.log2Size].setObject(index & this.sizeMinusOne, value);
+  }
+
+  @Override
   public int getInt(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getInt(offset);
   }
 
+  @Override
   public long getLong(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getLong(offset);
   }
 
+  @Override
   public double getDouble(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getDouble(offset);
   }
 
+  @Override
   public Object getObject(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;

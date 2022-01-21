@@ -1,6 +1,7 @@
 package me.paulbares.aggregation;
 
 import me.paulbares.arrow.ColumnVector;
+import me.paulbares.arrow.ImmutableColumnVector;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 
@@ -10,10 +11,10 @@ public class SumAggregator {
 
   public abstract static class ASumAggregator implements Aggregator {
 
-    protected final ColumnVector source;
+    protected final ImmutableColumnVector source;
     protected final ColumnVector destination;
 
-    public ASumAggregator(ColumnVector source, ColumnVector destination) {
+    public ASumAggregator(ImmutableColumnVector source, ColumnVector destination) {
       this.source = source;
       this.destination = destination;
       checkSource();
@@ -36,7 +37,7 @@ public class SumAggregator {
 
   public static class SumIntAggregator extends ASumAggregator {
 
-    public SumIntAggregator(ColumnVector source, ColumnVector destination) {
+    public SumIntAggregator(ImmutableColumnVector source, ColumnVector destination) {
       super(source, destination);
     }
 
@@ -64,13 +65,13 @@ public class SumAggregator {
     public void aggregate(int sourcePosition, int destinationPosition) {
       int a = this.source.getInt(sourcePosition);
       long b = this.destination.getLong(destinationPosition);
-      this.destination.writeLong(destinationPosition, a + b);
+      this.destination.setLong(destinationPosition, a + b);
     }
   }
 
   public static class SumDoubleAggregator extends ASumAggregator {
 
-    public SumDoubleAggregator(ColumnVector source, ColumnVector destination) {
+    public SumDoubleAggregator(ImmutableColumnVector source, ColumnVector destination) {
       super(source, destination);
     }
 
@@ -84,7 +85,7 @@ public class SumAggregator {
       checkType(this.destination);
     }
 
-    private void checkType(ColumnVector col) {
+    private void checkType(ImmutableColumnVector col) {
       if (col.getField().getFieldType().getType() instanceof ArrowType.FloatingPoint type) {
         if (type.getPrecision() != FloatingPointPrecision.DOUBLE) {
           throw new IllegalArgumentException("Incorrect floating point precision " + type.getPrecision());
@@ -98,7 +99,7 @@ public class SumAggregator {
     public void aggregate(int sourcePosition, int destinationPosition) {
       double a = this.source.getDouble(sourcePosition);
       double b = this.destination.getDouble(destinationPosition);
-      this.destination.writeDouble(destinationPosition, Double.sum(a, b));
+      this.destination.setDouble(destinationPosition, Double.sum(a, b));
     }
   }
 }

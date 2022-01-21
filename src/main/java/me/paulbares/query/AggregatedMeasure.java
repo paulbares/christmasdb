@@ -20,7 +20,7 @@ public class AggregatedMeasure implements Measure {
   }
 
   @Override
-  public String sqlExpression() {
+  public String alias() {
     return this.aggregationFunction + "(" + this.field + ")";
   }
 
