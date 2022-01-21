@@ -19,6 +19,7 @@ import java.util.List;
 public class TestQueryScenario {
 
   static ArrawDatastore datastore;
+  static ArrowQueryEngineScenario queryEngine;
 
   @BeforeAll
   static void beforeAll() {
@@ -49,6 +50,7 @@ public class TestQueryScenario {
             new Object[] {2, "mozzarella", 5d}
     );
     datastore.load("s2", tuplesScenario2);
+    queryEngine = new ArrowQueryEngineScenario(datastore);
   }
 
   @Test
@@ -57,7 +59,7 @@ public class TestQueryScenario {
             .addWildcardCoordinate("product")
             .addAggregatedMeasure("price", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngineScenario(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(3);
     Assertions.assertThat(result.getAggregates(List.of("syrup"))).containsExactly(2d);
     Assertions.assertThat(result.getAggregates(List.of("tofu"))).containsExactly(8d);
@@ -70,7 +72,7 @@ public class TestQueryScenario {
             .addWildcardCoordinate(Datastore.SCENARIO_FIELD)
             .addAggregatedMeasure("price", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngineScenario(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(3);
     Assertions.assertThat(result.getAggregates(List.of("base"))).containsExactly(14d);
     Assertions.assertThat(result.getAggregates(List.of("s1"))).containsExactly(13d);
@@ -84,7 +86,7 @@ public class TestQueryScenario {
             .addWildcardCoordinate("product")
             .addAggregatedMeasure("price", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngineScenario(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(9);
     Assertions.assertThat(result.getAggregates(List.of("base", "syrup"))).containsExactly(2d);
     Assertions.assertThat(result.getAggregates(List.of("base", "tofu"))).containsExactly(8d);
@@ -100,12 +102,11 @@ public class TestQueryScenario {
   @Test
   void testListCoordinates() {
     Query query = new Query()
-            .addCoordinates("name", "paul", "john", "mary")
-            .addCoordinates("country", "france", "usa")
-            .addAggregatedMeasure("age", SumAggregator.TYPE)
-            .addAggregatedMeasure("height", SumAggregator.TYPE);
+            .addCoordinates(Datastore.SCENARIO_FIELD, "s1", "s2")
+            .addCoordinates("product", "syrup")
+            .addAggregatedMeasure("price", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(3);
     Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);
     Assertions.assertThat(result.getAggregates(List.of("john", "usa"))).containsExactly(2l, 2d);
@@ -116,12 +117,11 @@ public class TestQueryScenario {
   @Test
   void testMixWildcardAndListCoordinates() {
     Query query = new Query()
-            .addCoordinates("name", "paul", "john")
+            .addCoordinates(Datastore.SCENARIO_FIELD, Datastore.MAIN_SCENARIO_NAME, "s2")
             .addWildcardCoordinate("country")
-            .addAggregatedMeasure("age", SumAggregator.TYPE)
-            .addAggregatedMeasure("height", SumAggregator.TYPE);
+            .addAggregatedMeasure("price", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     System.out.println(result);
     Assertions.assertThat(result.size()).isEqualTo(2);
     Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);

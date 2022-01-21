@@ -2,6 +2,11 @@ package me.paulbares.arrow;
 
 import org.apache.arrow.vector.types.pojo.Field;
 
+/**
+ * TODO should be rename in VectorScenarioReader???
+ *
+ * FIXME to avoid reading the mapping to know where to read the value, could we use a bitmap? Will it be quicker?
+ */
 public class ColumnScenario implements ImmutableColumnVector {
 
   protected final ColumnVector scenarioVector;
