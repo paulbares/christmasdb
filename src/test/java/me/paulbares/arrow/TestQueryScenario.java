@@ -26,28 +26,29 @@ public class TestQueryScenario {
     List<Field> fields = new ArrayList<>();
     fields.add(new Field("id", new FieldType(false, new ArrowType.Int(8, true), null), null));
     fields.add(new Field("product", new FieldType(false, new ArrowType.Utf8(), null), null));
-    fields.add(new Field("price", new FieldType(false, new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE), null), null));
+    fields.add(new Field("price", new FieldType(false, new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE),
+            null), null));
 
     datastore = new ArrawDatastore(fields, new int[]{0}, 4);
 
     List<Object[]> tuples = Arrays.asList(
-            new Object[] {0, "syrup", 2d},
-            new Object[] {1, "tofu", 8d},
-            new Object[] {2, "mozzarella", 4d}
+            new Object[]{0, "syrup", 2d},
+            new Object[]{1, "tofu", 8d},
+            new Object[]{2, "mozzarella", 4d}
     );
     datastore.load(Datastore.MAIN_SCENARIO_NAME, tuples);
 
     // Scenario 1
     List<Object[]> tuplesScenario1 = Arrays.asList(
-            new Object[] {0, "syrup", 3d},
-            new Object[] {1, "tofu", 6d}
+            new Object[]{0, "syrup", 3d},
+            new Object[]{1, "tofu", 6d}
     );
     datastore.load("s1", tuplesScenario1);
 
     // Scenario 2
     List<Object[]> tuplesScenario2 = Arrays.asList(
-            new Object[] {0, "syrup", 4d},
-            new Object[] {2, "mozzarella", 5d}
+            new Object[]{0, "syrup", 4d},
+            new Object[]{2, "mozzarella", 5d}
     );
     datastore.load("s2", tuplesScenario2);
     queryEngine = new ArrowQueryEngineScenario(datastore);
@@ -107,24 +108,42 @@ public class TestQueryScenario {
             .addAggregatedMeasure("price", SumAggregator.TYPE);
 
     PointListAggregateResult result = queryEngine.execute(query);
-    Assertions.assertThat(result.size()).isEqualTo(3);
-    Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);
-    Assertions.assertThat(result.getAggregates(List.of("john", "usa"))).containsExactly(2l, 2d);
-    Assertions.assertThat(result.getAggregates(List.of("mary", "france"))).containsExactly(4l, 4d);
-    Assertions.assertThat(result.getAggregates(List.of("mary", "usa"))).isNull();
+    Assertions.assertThat(result.size()).isEqualTo(2);
+    Assertions.assertThat(result.getAggregates(List.of("s1", "syrup"))).containsExactly(3d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "syrup"))).containsExactly(4d);
   }
 
   @Test
-  void testMixWildcardAndListCoordinates() {
+  void testWildcardOnOtherCoordinateAndListCoordinatesOnScenario() {
     Query query = new Query()
             .addCoordinates(Datastore.SCENARIO_FIELD, Datastore.MAIN_SCENARIO_NAME, "s2")
-            .addWildcardCoordinate("country")
+            .addWildcardCoordinate("product")
             .addAggregatedMeasure("price", SumAggregator.TYPE);
 
     PointListAggregateResult result = queryEngine.execute(query);
-    System.out.println(result);
-    Assertions.assertThat(result.size()).isEqualTo(2);
-    Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);
-    Assertions.assertThat(result.getAggregates(List.of("john", "usa"))).containsExactly(2l, 2d);
+    Assertions.assertThat(result.size()).isEqualTo(6);
+    Assertions.assertThat(result.getAggregates(List.of("base", "syrup"))).containsExactly(2d);
+    Assertions.assertThat(result.getAggregates(List.of("base", "tofu"))).containsExactly(8d);
+    Assertions.assertThat(result.getAggregates(List.of("base", "mozzarella"))).containsExactly(4d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "syrup"))).containsExactly(4d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "tofu"))).containsExactly(8d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "mozzarella"))).containsExactly(5d);
+  }
+
+  @Test
+  void testWildcardScenarioAndListCoordinatesOnOtherCoordinate() {
+    Query query = new Query()
+            .addWildcardCoordinate(Datastore.SCENARIO_FIELD)
+            .addCoordinates("product", "syrup", "tofu")
+            .addAggregatedMeasure("price", SumAggregator.TYPE);
+
+    PointListAggregateResult result = queryEngine.execute(query);
+    Assertions.assertThat(result.size()).isEqualTo(6);
+    Assertions.assertThat(result.getAggregates(List.of("base", "syrup"))).containsExactly(2d);
+    Assertions.assertThat(result.getAggregates(List.of("base", "tofu"))).containsExactly(8d);
+    Assertions.assertThat(result.getAggregates(List.of("s1", "syrup"))).containsExactly(3d);
+    Assertions.assertThat(result.getAggregates(List.of("s1", "tofu"))).containsExactly(6d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "syrup"))).containsExactly(4d);
+    Assertions.assertThat(result.getAggregates(List.of("s2", "tofu"))).containsExactly(8d);
   }
 }

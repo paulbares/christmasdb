@@ -8,12 +8,15 @@ import me.paulbares.dictionary.PointDictionary;
 import me.paulbares.query.AggregatedMeasure;
 import me.paulbares.query.PointListAggregateResult;
 import me.paulbares.query.Query;
+import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.util.ArrayList;
@@ -46,8 +49,8 @@ public class ArrowQueryEngineScenario {
           scenarios.add(-1); // means all.
         }
       } else {
+        Dictionary<Object> dictionary = this.store.dictionaryProvider.get(field);
         for (String value : values) {
-          Dictionary<Object> dictionary = this.store.dictionaryProvider.get(field);
           int position = dictionary.getPosition(value);
           if (position >= 0) {
             if (field.equals(Datastore.SCENARIO_FIELD)) {
@@ -93,17 +96,6 @@ public class ArrowQueryEngineScenario {
       aggregatorsByScenario.put(scenario, aggregators);
     });
 
-    RoaringBitmap matchRows;
-    if (acceptedValuesByField.isEmpty()) {
-      // All lines are accepted
-      matchRows = null;
-    } else {
-      // Take the first field that will be used as reference to build the first version of matching rows. Currently,
-      // the same field (first one) is chosen, but we can imagine having a proper algorithm to choose it and try to
-      // reduce the number of bit set into the map to accelerate any subsequent operations.
-      throw new RuntimeException("not implemented");
-    }
-
     int pointSize = query.coordinates.size();
     PointDictionary pointDictionary = new PointDictionary(pointSize);
     List<String> pointNames = FastList.newList(query.coordinates.keySet());
@@ -115,18 +107,17 @@ public class ArrowQueryEngineScenario {
       int[] pattern = patterns[i];
       String currentScenario;
       if (scenarioIndex >= 0) {
-        currentScenario = (String) this.store.dictionaryProvider.dictionaryMap.get(Datastore.SCENARIO_FIELD).read(pattern[scenarioIndex]);
+        currentScenario =
+                (String) this.store.dictionaryProvider.dictionaryMap.get(Datastore.SCENARIO_FIELD).read(pattern[scenarioIndex]);
       } else {
         currentScenario = Datastore.MAIN_SCENARIO_NAME;
       }
 
-      // FIXME do the other way. Loop over the rows and for each row loop over the patterns => much more efficient
-      // since we hope to hit same read a lot of time
-
-      // Loop over the matching rows.
-      for (int row = 0; row < this.store.rowCount; row++) {
+      IntIterable rowIterable = createRowIterable(currentScenario, acceptedValuesByField);
+      rowIterable.forEach(row -> {
         int[] buffer = new int[pointSize];
-        System.arraycopy(pattern, 0, buffer, 0, buffer.length); // FIXME could be optimize to detect if pattern is "empty" and avoid this array copy
+        System.arraycopy(pattern, 0, buffer, 0, buffer.length); // FIXME could be optimize to detect if pattern is
+        // "empty" and avoid this array copy
 
         // Fill the buffer
         for (int j = 0; j < pointSize; j++) {
@@ -142,15 +133,14 @@ public class ArrowQueryEngineScenario {
         // And then aggregate
         boolean check = false; // to do it only once
         for (Aggregator aggregator : aggregators) {
-          if (!check){
+          if (!check) {
             aggregator.getDestination().ensureCapacity(destinationRow);
           }
 
           aggregator.aggregate(row, destinationRow);
         }
-      }
+      });
     }
-
 //    if (matchRows != null) {
 //      matchRows.forEach(rowAggregator); // FIXME
 //    }
@@ -168,14 +158,16 @@ public class ArrowQueryEngineScenario {
     MutableIntList queriedScenarios;
     if (arrayOfScenarios.length == 0) {
       queriedScenarios = new IntArrayList(1);
-      int position = this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(Datastore.MAIN_SCENARIO_NAME);
+      int position =
+              this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(Datastore.MAIN_SCENARIO_NAME);
       queriedScenarios.add(position);
     } else if (arrayOfScenarios.length == 1) {
       int v = arrayOfScenarios[0];
       if (v < 0) {
         queriedScenarios = new IntArrayList(existingScenarios.size());
         for (int i = 0; i < existingScenarios.size(); i++) {
-          int position = this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(existingScenarios.get(i));
+          int position =
+                  this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(existingScenarios.get(i));
           queriedScenarios.add(position);
         }
       } else {
@@ -221,5 +213,80 @@ public class ArrowQueryEngineScenario {
       }
     }
     return pattern;
+  }
+
+  protected IntIterable createRowIterable(String scenario, Map<String, MutableIntSet> acceptedValuesByField) {
+    IntIterable matchRows;
+    if (acceptedValuesByField.isEmpty()) {
+      // All lines are accepted
+      matchRows = new RangeIntIterable(0, this.store.rowCount);
+    } else {
+      // Take the first field that will be used as reference to build the first version of matching rows. Currently,
+      // the same field (first one) is chosen, but we can imagine having a proper algorithm to choose it and try to
+      // reduce the number of bit set into the map to accelerate any subsequent operations.
+      String field = null;
+      for (Map.Entry<String, MutableIntSet> entry : acceptedValuesByField.entrySet()) {
+        if (!entry.getKey().equals(Datastore.SCENARIO_FIELD)) {
+          field = entry.getKey();
+          break;
+        }
+      }
+      if (field == null) {
+        matchRows = new RangeIntIterable(0, this.store.rowCount);
+      } else {
+        RoaringBitmap bitmap = initializeBitmap(acceptedValuesByField.get(field), this.store.getColumn(scenario, field));
+        // TODO do other conditions
+        matchRows = new RoaringBitmapIntIterable(bitmap);
+      }
+    }
+    return matchRows;
+  }
+
+  /**
+   * Creates the first {@link RoaringBitmap} to use.
+   */
+  protected RoaringBitmap initializeBitmap(IntSet acceptedValues, ImmutableColumnVector vector) {
+    RoaringBitmap matchRows = new RoaringBitmap();
+    for (int row = 0; row < this.store.rowCount; row++) {
+      if (acceptedValues.contains(vector.getInt(row))) {
+        matchRows.add(row);
+      }
+    }
+    return matchRows;
+  }
+
+  interface IntIterable {
+    void forEach(IntProcedure procedure);
+  }
+
+  static class RoaringBitmapIntIterable implements IntIterable {
+    protected final RoaringBitmap roaringBitmap;
+
+    RoaringBitmapIntIterable(RoaringBitmap roaringBitmap) {
+      this.roaringBitmap = roaringBitmap;
+    }
+
+    @Override
+    public void forEach(IntProcedure procedure) {
+      this.roaringBitmap.forEach((IntConsumer) r -> procedure.accept(r));
+    }
+  }
+
+  static class RangeIntIterable implements IntIterable {
+
+    protected final int start;
+    protected final int end;
+
+    RangeIntIterable(int start, int end) {
+      this.start = start;
+      this.end = end;
+    }
+
+    @Override
+    public void forEach(IntProcedure procedure) {
+      for (int i = this.start; i < this.end; i++) {
+        procedure.accept(i);
+      }
+    }
   }
 }
