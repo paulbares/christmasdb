@@ -8,8 +8,6 @@ import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
-import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +27,7 @@ public class ArrawDatastore implements Datastore {
   protected final int keyIndex;
   protected final SingleValuePrimaryIndex primaryIndex;
   protected final Map<String, Map<String, ColumnVector>> vectorByFieldByScenario = new HashMap<>();
-  protected final Map<String, Map<String, MutableIntIntMap>> rowMappingByFieldByScenario = new HashMap<>();
+  protected final Map<String, Map<String, RowMapping>> rowMappingByFieldByScenario = new HashMap<>();
 
   protected int rowCount = 0;
 
@@ -47,7 +45,13 @@ public class ArrawDatastore implements Datastore {
     this.keyIndex = keyIndices[0];
     this.primaryIndex = new SingleValuePrimaryIndex(this.dictionaryProvider, this.fields.get(this.keyIndex));
     for (Field field : fields) {
-      this.fieldVectorsMap.put(field.getName(), createColumnVector(field));
+      this.fieldVectorsMap.put(field.getName(),
+              this.vectorByFieldByScenario
+                      .computeIfAbsent(Datastore.MAIN_SCENARIO_NAME, k -> new HashMap<>())
+                      .computeIfAbsent(field.getName(), k -> createColumnVector(field)));
+      this.rowMappingByFieldByScenario
+              .computeIfAbsent(Datastore.MAIN_SCENARIO_NAME, k -> new HashMap<>())
+              .putIfAbsent(field.getName(), IdentityMapping.SINGLETON);
     }
   }
 
@@ -56,6 +60,7 @@ public class ArrawDatastore implements Datastore {
     if (field.getType() instanceof ArrowType.Utf8) {
       // Dictionarized the field.
       this.dictionaryProvider.getOrCreate(field.getName());
+      // FIXME dic field should be unsigned
       f = new Field(field.getName(), new FieldType(field.isNullable(), Types.MinorType.INT.getType(), null), null);
     }
     return new ColumnVector(this.allocator, f, this.vectorSize);
@@ -63,7 +68,7 @@ public class ArrawDatastore implements Datastore {
 
   @Override
   public void load(String scenario, List<Object[]> tuples) {
-    this.dictionaryProvider.getOrCreate(scenario).map(scenario);
+    this.dictionaryProvider.getOrCreate(Datastore.SCENARIO_FIELD).map(scenario);
 
     int startRowCount = this.rowCount;
     for (Object[] tuple : tuples) {
@@ -83,6 +88,8 @@ public class ArrawDatastore implements Datastore {
         }
 
         this.primaryIndex.mapKey(tuple[this.keyIndex], this.rowCount);
+        this.rowCount++;
+        setValueCount(startRowCount, tuples.size());
       } else {
         int row = this.primaryIndex.getRow(tuple[this.keyIndex]); // it is supposed to exist
         if (row < 0) {
@@ -118,22 +125,30 @@ public class ArrawDatastore implements Datastore {
               targetRow = vector.appendInt(position);
             }
             this.rowMappingByFieldByScenario.computeIfAbsent(scenario, k -> new HashMap<>())
-                    .computeIfAbsent(field.getName(), k -> new IntIntHashMap())
-                    .put(row, targetRow);
+                    .computeIfAbsent(field.getName(), k -> new IntIntMapRowMapping())
+                    .map(row, targetRow);
           }
         }
       }
-
-      this.rowCount++;
     }
-
-    setValueCount(startRowCount, tuples.size());
   }
 
   protected void setValueCount(int startRowCount, int nbOfTuples) {
     // After loading, set the values vectors that have been written
     for (Field field : this.fields) {
       this.fieldVectorsMap.get(field.getName()).setValueCount(startRowCount, nbOfTuples);
+    }
+  }
+
+  public ImmutableColumnVector getColumn(String scenario, String field) {
+    ColumnVector baseVector = this.vectorByFieldByScenario.get(Datastore.MAIN_SCENARIO_NAME).get(field);
+    ColumnVector scenarioVector = this.vectorByFieldByScenario.get(scenario).get(field);
+    if (scenarioVector == null) {
+      // same column
+      return baseVector;
+    } else {
+      RowMapping mapping = this.rowMappingByFieldByScenario.get(scenario).get(field);
+      return new ColumnScenario(baseVector, scenarioVector, scenario, mapping);
     }
   }
 

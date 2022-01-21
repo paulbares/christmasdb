@@ -11,6 +11,7 @@ import me.paulbares.query.Query;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.roaringbitmap.RoaringBitmap;
@@ -36,18 +37,15 @@ public class ArrowQueryEngineScenario {
   public PointListAggregateResult execute(Query query) {
     Map<String, MutableIntSet> acceptedValuesByField = new LinkedHashMap<>();
 
-    int[] scenarioIndex = new int[] { -1 };
-    List<ColumnScenario> pointVectors = new ArrayList<>();
+    int scenarioIndex = new ArrayList<>(query.coordinates.keySet()).indexOf(Datastore.SCENARIO_FIELD);
     MutableIntSet scenarios = new IntHashSet();
     query.coordinates.forEach((field, values) -> {
       if (values == null) {
         // wildcard, all values are accepted
-        pointVectors.add(new ColumnScenario());
         if (field.equals(Datastore.SCENARIO_FIELD)) {
           scenarios.add(-1); // means all.
         }
       } else {
-        pointVectors.add(new ColumnScenario());
         for (String value : values) {
           Dictionary<Object> dictionary = this.store.dictionaryProvider.get(field);
           int position = dictionary.getPosition(value);
@@ -66,13 +64,13 @@ public class ArrowQueryEngineScenario {
     List<ColumnVector> aggregates = new ArrayList<>();
     queriedScenarios.forEachWithIndex((s, index) -> {
       String scenario = (String) this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).read(s);
+      List<Aggregator> aggregators = new ArrayList<>();
       if (index == 0) {
-        List<Aggregator> aggregators = new ArrayList<>();
         query.measures.forEach(measure -> {
           if (measure instanceof AggregatedMeasure agg) {
             Aggregator aggregator = AggregatorFactory.create(
                     this.store.allocator,
-                    this.store.vectorByFieldByScenario.get(scenario).get(agg.field), // FIXME this field should be able to read from scenario column or base if not match
+                    this.store.getColumn(scenario, agg.field),
                     agg.aggregationFunction,
                     agg.alias());
             aggregators.add(aggregator);
@@ -81,20 +79,18 @@ public class ArrowQueryEngineScenario {
             throw new RuntimeException("Not implemented yet");
           }
         });
-        aggregatorsByScenario.put(scenario, aggregators);
       } else {
         // Here, we take the destination column created earlier.
-        List<Aggregator> aggregators = new ArrayList<>();
         for (int i = 0; i < query.measures.size(); i++) {
           AggregatedMeasure agg = (AggregatedMeasure) query.measures.get(i);
           Aggregator aggregator = AggregatorFactory.create(
-                  this.store.vectorByFieldByScenario.get(scenario).get(agg.field), // FIXME this field should be able to read from scenario column or base if not match
+                  this.store.getColumn(scenario, agg.field),
                   aggregates.get(i),
                   agg.aggregationFunction);
           aggregators.add(aggregator);
         }
-        aggregatorsByScenario.put(scenario, aggregators);
       }
+      aggregatorsByScenario.put(scenario, aggregators);
     });
 
     RoaringBitmap matchRows;
@@ -108,29 +104,37 @@ public class ArrowQueryEngineScenario {
       throw new RuntimeException("not implemented");
     }
 
-    PointDictionary pointDictionary = new PointDictionary(pointVectors.size());
+    int pointSize = query.coordinates.size();
+    PointDictionary pointDictionary = new PointDictionary(pointSize);
+    List<String> pointNames = FastList.newList(query.coordinates.keySet());
 
-    int[][] patterns = createPointListPattern(scenarioIndex[0], pointVectors.size(), scenarios);
+    int[][] patterns = createPointListPattern(scenarioIndex, pointSize, scenarios);
 
     // Loop over patterns
     for (int i = 0; i < patterns.length; i++) {
       int[] pattern = patterns[i];
       String currentScenario;
-      if (scenarioIndex[0] >= 0) {
-        currentScenario = (String) this.store.dictionaryProvider.dictionaryMap.get(Datastore.SCENARIO_FIELD).read(pattern[scenarioIndex[0]]);
+      if (scenarioIndex >= 0) {
+        currentScenario = (String) this.store.dictionaryProvider.dictionaryMap.get(Datastore.SCENARIO_FIELD).read(pattern[scenarioIndex]);
       } else {
         currentScenario = Datastore.MAIN_SCENARIO_NAME;
       }
 
+      // FIXME do the other way. Loop over the rows and for each row loop over the patterns => much more efficient
+      // since we hope to hit same read a lot of time
+
       // Loop over the matching rows.
       for (int row = 0; row < this.store.rowCount; row++) {
-        int[] buffer = new int[pointVectors.size()];
+        int[] buffer = new int[pointSize];
         System.arraycopy(pattern, 0, buffer, 0, buffer.length); // FIXME could be optimize to detect if pattern is "empty" and avoid this array copy
 
         // Fill the buffer
-        int j = 0;
-        for (ColumnScenario c : pointVectors) {
-          buffer[j++] = c.getInt(currentScenario, row);
+        for (int j = 0; j < pointSize; j++) {
+          // When j == scenarioIndex, the value is already set from the pattern. See above.
+          if (j != scenarioIndex) {
+            // FIXME do not recreate it each time
+            buffer[j] = this.store.getColumn(currentScenario, pointNames.get(j)).getInt(row);
+          }
         }
 
         int destinationRow = pointDictionary.map(buffer);
@@ -151,7 +155,6 @@ public class ArrowQueryEngineScenario {
 //      matchRows.forEach(rowAggregator); // FIXME
 //    }
 
-    List<String> pointNames = pointVectors.stream().map(v -> v.getField().getName()).collect(Collectors.toList());
     return new PointListAggregateResult(
             pointDictionary,
             pointNames,
@@ -161,7 +164,6 @@ public class ArrowQueryEngineScenario {
 
   private IntList getQueriedScenarios(MutableIntSet scenarios) {
     List<String> existingScenarios = new ArrayList<>(this.store.vectorByFieldByScenario.keySet());
-    existingScenarios.add(Datastore.MAIN_SCENARIO_NAME);
     int[] arrayOfScenarios = scenarios.toArray();
     MutableIntList queriedScenarios;
     if (arrayOfScenarios.length == 0) {
@@ -193,7 +195,6 @@ public class ArrowQueryEngineScenario {
   private int[][] createPointListPattern(int scenarioIndex, int pointSize, MutableIntSet scenarios) {
     int[][] pattern;
     List<String> existingScenarios = new ArrayList<>(this.store.vectorByFieldByScenario.keySet());
-    existingScenarios.add(Datastore.MAIN_SCENARIO_NAME);
     int[] arrayOfScenarios = scenarios.toArray();
     if (arrayOfScenarios.length == 0) {
       // not even querying. default on base and nothing to do

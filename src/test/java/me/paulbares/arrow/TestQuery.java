@@ -1,5 +1,6 @@
 package me.paulbares.arrow;
 
+import me.paulbares.Datastore;
 import me.paulbares.aggregation.SumAggregator;
 import me.paulbares.query.PointListAggregateResult;
 import me.paulbares.query.Query;
@@ -19,6 +20,7 @@ import java.util.List;
 public class TestQuery {
 
   static ArrawDatastore datastore;
+  static ArrowQueryEngineScenario queryEngine;
 
   @BeforeAll
   static void beforeAll() {
@@ -42,7 +44,8 @@ public class TestQuery {
             new Object[] {"jack", "usa", 1, 1d}
     );
 
-    datastore.load(null, tuples);
+    datastore.load(Datastore.MAIN_SCENARIO_NAME, tuples);
+    queryEngine = new ArrowQueryEngineScenario(datastore);
   }
 
   @Test
@@ -52,7 +55,7 @@ public class TestQuery {
             .addAggregatedMeasure("age", SumAggregator.TYPE)
             .addAggregatedMeasure("height", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(3);
     Assertions.assertThat(result.getAggregates(List.of("england"))).containsExactly(1l, 1d);
     Assertions.assertThat(result.getAggregates(List.of("usa"))).containsExactly(11l, 11d);
@@ -67,7 +70,7 @@ public class TestQuery {
             .addAggregatedMeasure("age", SumAggregator.TYPE)
             .addAggregatedMeasure("height", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(6);
     Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);
     Assertions.assertThat(result.getAggregates(List.of("peter", "england"))).containsExactly(1l, 1d);
@@ -85,7 +88,7 @@ public class TestQuery {
             .addAggregatedMeasure("age", SumAggregator.TYPE)
             .addAggregatedMeasure("height", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     Assertions.assertThat(result.size()).isEqualTo(3);
     Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);
     Assertions.assertThat(result.getAggregates(List.of("john", "usa"))).containsExactly(2l, 2d);
@@ -101,7 +104,7 @@ public class TestQuery {
             .addAggregatedMeasure("age", SumAggregator.TYPE)
             .addAggregatedMeasure("height", SumAggregator.TYPE);
 
-    PointListAggregateResult result = new ArrowQueryEngine(datastore).execute(query);
+    PointListAggregateResult result = queryEngine.execute(query);
     System.out.println(result);
     Assertions.assertThat(result.size()).isEqualTo(2);
     Assertions.assertThat(result.getAggregates(List.of("paul", "france"))).containsExactly(1l, 1d);

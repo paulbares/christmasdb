@@ -17,7 +17,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 
 // FIXME should it maintain the nb of line written?
-public class ColumnVector {
+public class ColumnVector implements ImmutableColumnVector{
 
   /**
    * MacOS: $sysctl hw.l1dcachesize to know the cache size. It is often better for applications to work in chunks
@@ -55,6 +55,7 @@ public class ColumnVector {
     this.accessors = new ValueVectorHandler[]{createAccessor(field)};
   }
 
+  @Override
   public Field getField() {
     return this.field;
   }
@@ -151,24 +152,28 @@ public class ColumnVector {
     this.accessors[index >> this.log2Size].setObject(index & this.sizeMinusOne, value);
   }
 
+  @Override
   public int getInt(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getInt(offset);
   }
 
+  @Override
   public long getLong(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getLong(offset);
   }
 
+  @Override
   public double getDouble(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
     return this.accessors[bucket].getDouble(offset);
   }
 
+  @Override
   public Object getObject(int index) {
     int bucket = index >> this.log2Size;
     int offset = index & this.sizeMinusOne;
