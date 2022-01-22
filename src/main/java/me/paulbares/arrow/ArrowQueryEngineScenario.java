@@ -267,12 +267,7 @@ public class ArrowQueryEngineScenario {
     void forEach(IntProcedure procedure);
   }
 
-  static class RoaringBitmapIntIterable implements IntIterable {
-    protected final RoaringBitmap roaringBitmap;
-
-    RoaringBitmapIntIterable(RoaringBitmap roaringBitmap) {
-      this.roaringBitmap = roaringBitmap;
-    }
+  record RoaringBitmapIntIterable(RoaringBitmap roaringBitmap) implements IntIterable {
 
     @Override
     public void forEach(IntProcedure procedure) {
@@ -280,15 +275,7 @@ public class ArrowQueryEngineScenario {
     }
   }
 
-  static class RangeIntIterable implements IntIterable {
-
-    protected final int start;
-    protected final int end;
-
-    RangeIntIterable(int start, int end) {
-      this.start = start;
-      this.end = end;
-    }
+  record RangeIntIterable(int start, int end) implements IntIterable {
 
     @Override
     public void forEach(IntProcedure procedure) {

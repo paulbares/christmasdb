@@ -22,7 +22,6 @@ public class ArrawDatastore implements Datastore {
   protected final BufferAllocator allocator;
   protected final int vectorSize;
   protected final List<Field> fields;
-  protected final Map<String, ColumnVector> fieldVectorsMap = new HashMap<>();
   protected final DictionaryProvider dictionaryProvider = new DictionaryProvider();
   protected final int keyIndex;
   protected final SingleValuePrimaryIndex primaryIndex;
@@ -45,10 +44,9 @@ public class ArrawDatastore implements Datastore {
     this.keyIndex = keyIndices[0];
     this.primaryIndex = new SingleValuePrimaryIndex(this.dictionaryProvider, this.fields.get(this.keyIndex));
     for (Field field : fields) {
-      this.fieldVectorsMap.put(field.getName(),
-              this.vectorByFieldByScenario
-                      .computeIfAbsent(Datastore.MAIN_SCENARIO_NAME, k -> new HashMap<>())
-                      .computeIfAbsent(field.getName(), k -> createColumnVector(field)));
+      this.vectorByFieldByScenario
+              .computeIfAbsent(Datastore.MAIN_SCENARIO_NAME, k -> new HashMap<>())
+              .computeIfAbsent(field.getName(), k -> createColumnVector(field));
       this.rowMappingByFieldByScenario
               .computeIfAbsent(Datastore.MAIN_SCENARIO_NAME, k -> new HashMap<>())
               .putIfAbsent(field.getName(), IdentityMapping.SINGLETON);
@@ -70,52 +68,61 @@ public class ArrawDatastore implements Datastore {
   public void load(String scenario, List<Object[]> tuples) {
     this.dictionaryProvider.getOrCreate(Datastore.SCENARIO_FIELD).map(scenario);
 
-    int startRowCount = this.rowCount;
-    for (Object[] tuple : tuples) {
-      assert tuple.length == this.fields.size();
+//    int startRowCount = this.rowCount;
+    ColumnVector[] baseVectors = new ColumnVector[this.fields.size()];
+    ColumnVector[] scenarioVectors = new ColumnVector[this.fields.size()];
+    RowMapping[] rowMappings = new RowMapping[this.fields.size()];
+    Dictionary<Object>[] dictionaries = new Dictionary[this.fields.size()];
+    for (int i = 0; i < baseVectors.length; i++) {
+      String fieldName = this.fields.get(i).getName();
+      baseVectors[i] = this.vectorByFieldByScenario.get(MAIN_SCENARIO_NAME).get(fieldName);
+      dictionaries[i] = this.dictionaryProvider.get(fieldName);
+    }
 
-      if (scenario.equals(MAIN_SCENARIO_NAME)) {
+    if (scenario.equals(MAIN_SCENARIO_NAME)) {
+      for (Object[] tuple : tuples) {
         for (int i = 0; i < tuple.length; i++) {
-          Field field = this.fields.get(i);
-          ColumnVector column = this.fieldVectorsMap.get(field.getName());
-          Dictionary<Object> dictionary = this.dictionaryProvider.get(field.getName());
+          Dictionary<Object> dictionary = dictionaries[i];
           if (dictionary == null) {
-            column.setObject(this.rowCount, tuple[i]);
+            baseVectors[i].setObject(this.rowCount, tuple[i]);
           } else {
             int position = dictionary.map(tuple[i]);
-            column.setInt(this.rowCount, position);
+            baseVectors[i].setInt(this.rowCount, position);
           }
         }
 
         this.primaryIndex.mapKey(tuple[this.keyIndex], this.rowCount);
         this.rowCount++;
-        setValueCount(startRowCount, tuples.size());
-      } else {
+      }
+      // Does not seem needed
+//        setValueCount(startRowCount, tuples.size());
+    } else {
+      for (Object[] tuple : tuples) {
         int row = this.primaryIndex.getRow(tuple[this.keyIndex]); // it is supposed to exist
         if (row < 0) {
           throw new IllegalArgumentException("Cannot find key " + tuple[this.keyIndex] + " in " + MAIN_SCENARIO_NAME + " scenario");
         }
-        // Find the fields that are different.
-
+        // Find the fields for which values are different from the base.
         for (int i = 0; i < tuple.length; i++) {
-          Field field = this.fields.get(i);
-          ColumnVector column = this.fieldVectorsMap.get(field.getName());
-          Dictionary<Object> dictionary = this.dictionaryProvider.get(field.getName());
-
           boolean isEqual;
+          Dictionary<Object> dictionary = dictionaries[i];
           if (dictionary == null) {
-            Object o = column.getObject(row);
+            Object o = baseVectors[i].getObject(row);
             isEqual = o.equals(tuple[i]);
           } else {
-            int o = column.getInt(row);
+            int o = baseVectors[i].getInt(row);
             int position = dictionary.getPosition(tuple[i]);
             isEqual = o == position;
           }
 
           if (!isEqual) {
-            ColumnVector vector = this.vectorByFieldByScenario
-                    .computeIfAbsent(scenario, k -> new HashMap<>())
-                    .computeIfAbsent(field.getName(), k -> createColumnVector(field));
+            ColumnVector vector = scenarioVectors[i];
+            if (vector == null) {
+              Field field = this.fields.get(i);
+              vector = scenarioVectors[i] = this.vectorByFieldByScenario
+                      .computeIfAbsent(scenario, k -> new HashMap<>())
+                      .computeIfAbsent(field.getName(), k -> createColumnVector(field));
+            }
 
             int targetRow;
             if (dictionary == null) {
@@ -124,9 +131,15 @@ public class ArrawDatastore implements Datastore {
               int position = dictionary.map(tuple[i]);
               targetRow = vector.appendInt(position);
             }
-            this.rowMappingByFieldByScenario.computeIfAbsent(scenario, k -> new HashMap<>())
-                    .computeIfAbsent(field.getName(), k -> new IntIntMapRowMapping())
-                    .map(row, targetRow);
+
+            RowMapping mapping = rowMappings[i];
+            if (mapping == null) {
+              Field field = this.fields.get(i);
+              mapping = rowMappings[i] = this.rowMappingByFieldByScenario
+                      .computeIfAbsent(scenario, k -> new HashMap<>())
+                      .computeIfAbsent(field.getName(), k -> new IntIntMapRowMapping());
+            }
+            mapping.map(row, targetRow);
           }
         }
       }
@@ -134,10 +147,10 @@ public class ArrawDatastore implements Datastore {
   }
 
   protected void setValueCount(int startRowCount, int nbOfTuples) {
-    // After loading, set the values vectors that have been written
-    for (Field field : this.fields) {
-      this.fieldVectorsMap.get(field.getName()).setValueCount(startRowCount, nbOfTuples);
-    }
+//    // After loading, set the values vectors that have been written
+//    for (Field field : this.fields) {
+//      this.fieldVectorsMap.get(field.getName()).setValueCount(startRowCount, nbOfTuples);
+//    }
   }
 
   public ImmutableColumnVector getColumn(String scenario, String field) {
@@ -164,10 +177,10 @@ public class ArrawDatastore implements Datastore {
     for (int i = 0; i < rowCount; i++) {
       row.clear();
       row.add(i);
-      for (Field field : this.fields) {
-         this.fieldVectorsMap.get(field.getName());
-        row.add(this.fieldVectorsMap.get(field.getName()).getObject(i));
-      }
+//      for (Field field : this.fields) {
+//         this.fieldVectorsMap.get(field.getName());
+//        row.add(this.fieldVectorsMap.get(field.getName()).getObject(i));
+//      }
       printRow(sb, row);
     }
     return sb.toString();

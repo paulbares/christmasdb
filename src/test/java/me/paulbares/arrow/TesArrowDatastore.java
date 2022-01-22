@@ -37,16 +37,16 @@ public class TesArrowDatastore {
             new Object[] {"jack", 30, 175d}
     );
 
-    datastore.load(null, tuples);
+    datastore.load(Datastore.MAIN_SCENARIO_NAME, tuples);
 
     for (int row = 0; row < tuples.size(); row++) {
       for (int i = 0; i < tuples.get(row).length; i++) {
         Dictionary<Object> dic = datastore.dictionaryProvider.get(fields.get(i).getName());
         if (dic != null) {
-          Object read = dic.read(datastore.fieldVectorsMap.get(fields.get(i).getName()).getInt(row));
+          Object read = dic.read(datastore.vectorByFieldByScenario.get(Datastore.MAIN_SCENARIO_NAME).get(fields.get(i).getName()).getInt(row));
           Assertions.assertThat(read).isEqualTo(tuples.get(row)[i]);
         } else {
-          Assertions.assertThat(datastore.fieldVectorsMap.get(fields.get(i).getName()).getObject(row)).isEqualTo(tuples.get(row)[i]);
+          Assertions.assertThat(datastore.vectorByFieldByScenario.get(Datastore.MAIN_SCENARIO_NAME).get(fields.get(i).getName()).getObject(row)).isEqualTo(tuples.get(row)[i]);
         }
       }
     }
@@ -81,5 +81,7 @@ public class TesArrowDatastore {
             new Object[] {2, "mozzarella", 5d}
     );
     datastore.load("s2", tuplesScenario2);
+
+    // FIXME assert content??
   }
 }
