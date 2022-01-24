@@ -16,12 +16,10 @@ import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * A different version compatible with scenario.
@@ -38,34 +36,91 @@ public class ArrowQueryEngineScenario {
   }
 
   public PointListAggregateResult execute(Query query) {
-    Map<String, MutableIntSet> acceptedValuesByField = new LinkedHashMap<>();
+    Map<String, MutableIntSet> acceptedValuesByField = computeAcceptedValues(query);
+    IntList queriedScenarios = computeQueriedScenarios(query);
+    List<ColumnVector> aggregates = new ArrayList<>();
+    Map<String, List<Aggregator>> aggregatorsByScenario = computeAggregators(query, queriedScenarios, aggregates);
+
+    int pointSize = query.coordinates.size();
+    PointDictionary pointDictionary = new PointDictionary(pointSize);
+    List<String> pointNames = FastList.newList(query.coordinates.keySet());
 
     int scenarioIndex = new ArrayList<>(query.coordinates.keySet()).indexOf(Datastore.SCENARIO_FIELD);
-    MutableIntSet scenarios = new IntHashSet();
+    int[] scenariosArray = queriedScenarios.toArray();
+    RowIterableProvider rowIterableProvider = RowIterableProviderFactory.create(this.store, acceptedValuesByField);
+
+    // Loop over the scenarios
+    for (int i = 0; i < scenariosArray.length; i++) {
+      String scenario = (String) this.store.dictionaryProvider.dictionaryMap
+              .get(Datastore.SCENARIO_FIELD)
+              .read(scenariosArray[i]);
+
+      ImmutableColumnVector[] columns = new ImmutableColumnVector[pointSize];
+      for (int pointIndex = 0; pointIndex < columns.length; pointIndex++) {
+        if (pointIndex != scenarioIndex) {
+          columns[pointIndex] = this.store.getColumn(scenario, pointNames.get(pointIndex));
+        }
+      }
+
+      List<Aggregator> aggregators = aggregatorsByScenario.get(scenario);
+      IntIterable rowIterable = rowIterableProvider.apply(scenario);
+
+      int scenarioDic = i;
+      rowIterable.forEach(row -> {
+        int[] point = new int[pointSize];
+        for (int pointIndex = 0; pointIndex < pointSize; pointIndex++) {
+          // When j == scenarioIndex, the value is already set from the pattern. See above.
+          if (pointIndex != scenarioIndex) {
+            point[pointIndex] = columns[pointIndex].getInt(row);
+          } else {
+            point[pointIndex] = scenariosArray[scenarioDic];
+          }
+        }
+
+        int destinationRow = pointDictionary.map(point);
+        // And then aggregate
+        boolean check = false; // to do it only once
+        for (Aggregator aggregator : aggregators) {
+          if (!check) {
+            aggregator.getDestination().ensureCapacity(destinationRow);
+          }
+
+          aggregator.aggregate(row, destinationRow);
+        }
+      });
+    }
+
+    return new PointListAggregateResult(
+            pointDictionary,
+            pointNames,
+            pointNames.stream().map(pointName -> this.store.dictionaryProvider.get(pointName)).toList(),
+            aggregates);
+  }
+
+  protected Map<String, MutableIntSet> computeAcceptedValues(Query query) {
+    Map<String, MutableIntSet> acceptedValuesByField = new HashMap<>();
     query.coordinates.forEach((field, values) -> {
+      if (field.equals(Datastore.SCENARIO_FIELD)) {
+        return;
+      }
+
       if (values == null) {
         // Wildcard, all values are accepted
-        if (field.equals(Datastore.SCENARIO_FIELD)) {
-          scenarios.add(-1); // means all.
-        }
       } else {
         Dictionary<Object> dictionary = this.store.dictionaryProvider.get(field);
         for (String value : values) {
           int position = dictionary.getPosition(value);
           if (position >= 0) {
-            if (field.equals(Datastore.SCENARIO_FIELD)) {
-              scenarios.add(position);
-            } else{
-              acceptedValuesByField.computeIfAbsent(field, key -> new IntHashSet()).add(position);
-            }
+            acceptedValuesByField.computeIfAbsent(field, key -> new IntHashSet()).add(position);
           }
         }
       }
     });
+    return acceptedValuesByField;
+  }
 
-    IntList queriedScenarios = getQueriedScenarios(scenarios);
+  protected Map<String, List<Aggregator>> computeAggregators(Query query, IntList queriedScenarios, List<ColumnVector> aggregates) {
     Map<String, List<Aggregator>> aggregatorsByScenario = new HashMap<>();
-    List<ColumnVector> aggregates = new ArrayList<>();
     queriedScenarios.forEachWithIndex((s, index) -> {
       String scenario = (String) this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).read(s);
       List<Aggregator> aggregators = new ArrayList<>();
@@ -96,109 +151,30 @@ public class ArrowQueryEngineScenario {
       }
       aggregatorsByScenario.put(scenario, aggregators);
     });
-
-    int pointSize = query.coordinates.size();
-    PointDictionary pointDictionary = new PointDictionary(pointSize);
-    List<String> pointNames = FastList.newList(query.coordinates.keySet());
-
-    int[][] patterns = createPointListPatterns(scenarioIndex, pointSize, queriedScenarios);
-    RowIterableProvider rowIterableProvider = RowIterableProviderFactory.create(this.store, acceptedValuesByField);
-
-    // Loop over patterns
-    for (int i = 0; i < patterns.length; i++) {
-      int[] pattern = patterns[i];
-      String currentScenario;
-      if (scenarioIndex >= 0) {
-        currentScenario =
-                (String) this.store.dictionaryProvider.dictionaryMap.get(Datastore.SCENARIO_FIELD).read(pattern[scenarioIndex]);
-      } else {
-        currentScenario = Datastore.MAIN_SCENARIO_NAME;
-      }
-
-      IntIterable rowIterable = rowIterableProvider.apply(currentScenario);
-      rowIterable.forEach(row -> {
-        int[] buffer = new int[pointSize];
-        // FIXME could be optimize to detect if pattern is "empty" and avoid this array copy
-        System.arraycopy(pattern, 0, buffer, 0, buffer.length);
-
-        // Fill the buffer
-        for (int j = 0; j < pointSize; j++) {
-          // When j == scenarioIndex, the value is already set from the pattern. See above.
-          if (j != scenarioIndex) {
-            // FIXME do not recreate it each time
-            buffer[j] = this.store.getColumn(currentScenario, pointNames.get(j)).getInt(row);
-          }
-        }
-
-        int destinationRow = pointDictionary.map(buffer);
-        List<Aggregator> aggregators = aggregatorsByScenario.get(currentScenario);
-        // And then aggregate
-        boolean check = false; // to do it only once
-        for (Aggregator aggregator : aggregators) {
-          if (!check) {
-            aggregator.getDestination().ensureCapacity(destinationRow);
-          }
-
-          aggregator.aggregate(row, destinationRow);
-        }
-      });
-    }
-
-    return new PointListAggregateResult(
-            pointDictionary,
-            pointNames,
-            pointNames.stream().map(pointName -> this.store.dictionaryProvider.get(pointName)).collect(Collectors.toList()),
-            aggregates);
+    return aggregatorsByScenario;
   }
 
-  private IntList getQueriedScenarios(MutableIntSet scenarios) {
-    List<String> existingScenarios = new ArrayList<>(this.store.vectorByFieldByScenario.keySet());
-    int[] arrayOfScenarios = scenarios.toArray();
-    MutableIntList queriedScenarios;
-    if (arrayOfScenarios.length == 0) {
-      queriedScenarios = new IntArrayList(1);
-      int position =
-              this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(Datastore.MAIN_SCENARIO_NAME);
-      queriedScenarios.add(position);
-    } else if (arrayOfScenarios.length == 1) {
-      int v = arrayOfScenarios[0];
-      if (v < 0) {
-        // Wildcard
-        queriedScenarios = new IntArrayList(existingScenarios.size());
-        for (int i = 0; i < existingScenarios.size(); i++) {
-          int position =
-                  this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(existingScenarios.get(i));
-          queriedScenarios.add(position);
-        }
-      } else {
-        // Single scenario is queried
-        queriedScenarios = new IntArrayList(1);
-        queriedScenarios.add(v);
+  protected IntList computeQueriedScenarios(Query query) {
+    List<String> values;
+    if (query.coordinates.containsKey(Datastore.SCENARIO_FIELD)) {
+      // This condition handles wildcard coordinates.
+      values = query.coordinates.get(Datastore.SCENARIO_FIELD);
+      if (values == null) { // Wildcard
+        values = new ArrayList<>(this.store.vectorByFieldByScenario.keySet());
       }
     } else {
-      // A subset of scenario is queried
-      queriedScenarios = new IntArrayList(arrayOfScenarios.length);
-      for (int i = 0; i < arrayOfScenarios.length; i++) {
-        queriedScenarios.add(arrayOfScenarios[i]);
+      values = Collections.singletonList(Datastore.MAIN_SCENARIO_NAME);
+    }
+
+    MutableIntList scenarios = new IntArrayList();
+    Dictionary<Object> dictionary = this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD);
+    for (String value : values) {
+      int position = dictionary.getPosition(value);
+      if (position >= 0) {
+        scenarios.add(position);
       }
     }
-    return queriedScenarios;
-  }
 
-  private int[][] createPointListPatterns(int scenarioIndex, int pointSize, IntList queriedScenarios) {
-    int[][] patterns = new int[queriedScenarios.size()][pointSize];
-    if (scenarioIndex >= 0) {
-      queriedScenarios.forEachWithIndex((val, index) -> {
-        initializeArray(patterns[index]);
-        patterns[index][scenarioIndex] = val;
-      });
-    }
-    return patterns;
-  }
-
-  protected static final void initializeArray(int[] array) {
-    if (DEBUG_MODE) {
-      Arrays.fill(array, FREE_SLOT);
-    }
+    return scenarios;
   }
 }
