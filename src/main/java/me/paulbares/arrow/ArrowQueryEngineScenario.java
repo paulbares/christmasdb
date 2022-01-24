@@ -8,20 +8,16 @@ import me.paulbares.dictionary.PointDictionary;
 import me.paulbares.query.AggregatedMeasure;
 import me.paulbares.query.PointListAggregateResult;
 import me.paulbares.query.Query;
-import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-import org.roaringbitmap.IntConsumer;
-import org.roaringbitmap.RoaringBitmap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +27,9 @@ import java.util.stream.Collectors;
  * A different version compatible with scenario.
  */
 public class ArrowQueryEngineScenario {
+
+  protected static final int FREE_SLOT = -1;
+  protected static final boolean DEBUG_MODE = true;
 
   protected final ArrawDatastore store;
 
@@ -103,6 +102,7 @@ public class ArrowQueryEngineScenario {
     List<String> pointNames = FastList.newList(query.coordinates.keySet());
 
     int[][] patterns = createPointListPattern(scenarioIndex, pointSize, scenarios);
+    RowIterableProvider rowIterableProvider = RowIterableProviderFactory.create(this.store, acceptedValuesByField);
 
     // Loop over patterns
     for (int i = 0; i < patterns.length; i++) {
@@ -115,11 +115,11 @@ public class ArrowQueryEngineScenario {
         currentScenario = Datastore.MAIN_SCENARIO_NAME;
       }
 
-      IntIterable rowIterable = createRowIterable(currentScenario, acceptedValuesByField);
+      IntIterable rowIterable = rowIterableProvider.apply(currentScenario);
       rowIterable.forEach(row -> {
         int[] buffer = new int[pointSize];
-        System.arraycopy(pattern, 0, buffer, 0, buffer.length); // FIXME could be optimize to detect if pattern is
-        // "empty" and avoid this array copy
+        // FIXME could be optimize to detect if pattern is "empty" and avoid this array copy
+        System.arraycopy(pattern, 0, buffer, 0, buffer.length);
 
         // Fill the buffer
         for (int j = 0; j < pointSize; j++) {
@@ -143,9 +143,6 @@ public class ArrowQueryEngineScenario {
         }
       });
     }
-//    if (matchRows != null) {
-//      matchRows.forEach(rowAggregator); // FIXME
-//    }
 
     return new PointListAggregateResult(
             pointDictionary,
@@ -193,17 +190,20 @@ public class ArrowQueryEngineScenario {
     if (arrayOfScenarios.length == 0) {
       // not even querying. default on base and nothing to do
       pattern = new int[1][pointSize];
+      initializeArray(pattern[0]);
     } else if (arrayOfScenarios.length == 1) {
       int v = arrayOfScenarios[0];
       if (v < 0) {
         pattern = new int[existingScenarios.size()][pointSize];
         for (int i = 0; i < existingScenarios.size(); i++) {
           pattern[i] = new int[pointSize];
+          initializeArray(pattern[i]);
           int position = this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(existingScenarios.get(i));
           pattern[i][scenarioIndex] = position;
         }
       } else {
         pattern = new int[1][pointSize];
+        initializeArray(pattern[0]);
         pattern[0][scenarioIndex] = v;
       }
     } else {
@@ -211,77 +211,16 @@ public class ArrowQueryEngineScenario {
       pattern = new int[arrayOfScenarios.length][pointSize];
       for (int i = 0; i < arrayOfScenarios.length; i++) {
         pattern[i] = new int[pointSize];
+        initializeArray(pattern[i]);
         pattern[i][scenarioIndex] = arrayOfScenarios[i];
       }
     }
     return pattern;
   }
 
-  protected IntIterable createRowIterable(String scenario, Map<String, MutableIntSet> acceptedValuesByField) {
-    IntIterable matchRows;
-    if (acceptedValuesByField.isEmpty()) {
-      // All lines are accepted
-      matchRows = new RangeIntIterable(0, this.store.rowCount);
-    } else {
-      // Take the first field that will be used as reference to build the first version of matching rows. Currently,
-      // the same field (first one) is chosen, but we can imagine having a proper algorithm to choose it and try to
-      // reduce the number of bit set into the map to accelerate any subsequent operations.
-      if (acceptedValuesByField.containsKey(Datastore.SCENARIO_FIELD)) {
-        throw new IllegalStateException("not expected " + acceptedValuesByField);
-      }
-      Iterator<Map.Entry<String, MutableIntSet>> iterator = acceptedValuesByField.entrySet().iterator();
-      Map.Entry<String, MutableIntSet> first = iterator.next();
-      RoaringBitmap bitmap = initializeBitmap(first.getValue(), this.store.getColumn(scenario, first.getKey()));
-      while (iterator.hasNext()) {
-        Map.Entry<String, MutableIntSet> next = iterator.next();
-        String field = next.getKey();
-        MutableIntSet values = next.getValue();
-        ImmutableColumnVector column = this.store.getColumn(scenario, field);
-        RoaringBitmap tmp = new RoaringBitmap();
-        bitmap.forEach((org.roaringbitmap.IntConsumer) row -> {
-          if (values.contains(column.getInt(row))) {
-            tmp.add(row);
-          }
-        });
-        bitmap.and(tmp);
-      }
-      matchRows = new RoaringBitmapIntIterable(bitmap);
-    }
-    return matchRows;
-  }
-
-  /**
-   * Creates the first {@link RoaringBitmap} to use.
-   */
-  protected RoaringBitmap initializeBitmap(IntSet acceptedValues, ImmutableColumnVector vector) {
-    RoaringBitmap matchRows = new RoaringBitmap();
-    for (int row = 0; row < this.store.rowCount; row++) {
-      if (acceptedValues.contains(vector.getInt(row))) {
-        matchRows.add(row);
-      }
-    }
-    return matchRows;
-  }
-
-  interface IntIterable {
-    void forEach(IntProcedure procedure);
-  }
-
-  record RoaringBitmapIntIterable(RoaringBitmap roaringBitmap) implements IntIterable {
-
-    @Override
-    public void forEach(IntProcedure procedure) {
-      this.roaringBitmap.forEach((IntConsumer) r -> procedure.accept(r));
-    }
-  }
-
-  record RangeIntIterable(int start, int end) implements IntIterable {
-
-    @Override
-    public void forEach(IntProcedure procedure) {
-      for (int i = this.start; i < this.end; i++) {
-        procedure.accept(i);
-      }
+  protected static final void initializeArray(int[] array) {
+    if (DEBUG_MODE) {
+      Arrays.fill(array, FREE_SLOT);
     }
   }
 }
