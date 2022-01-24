@@ -44,7 +44,7 @@ public class ArrowQueryEngineScenario {
     MutableIntSet scenarios = new IntHashSet();
     query.coordinates.forEach((field, values) -> {
       if (values == null) {
-        // wildcard, all values are accepted
+        // Wildcard, all values are accepted
         if (field.equals(Datastore.SCENARIO_FIELD)) {
           scenarios.add(-1); // means all.
         }
@@ -101,7 +101,7 @@ public class ArrowQueryEngineScenario {
     PointDictionary pointDictionary = new PointDictionary(pointSize);
     List<String> pointNames = FastList.newList(query.coordinates.keySet());
 
-    int[][] patterns = createPointListPattern(scenarioIndex, pointSize, scenarios);
+    int[][] patterns = createPointListPatterns(scenarioIndex, pointSize, queriedScenarios);
     RowIterableProvider rowIterableProvider = RowIterableProviderFactory.create(this.store, acceptedValuesByField);
 
     // Loop over patterns
@@ -163,6 +163,7 @@ public class ArrowQueryEngineScenario {
     } else if (arrayOfScenarios.length == 1) {
       int v = arrayOfScenarios[0];
       if (v < 0) {
+        // Wildcard
         queriedScenarios = new IntArrayList(existingScenarios.size());
         for (int i = 0; i < existingScenarios.size(); i++) {
           int position =
@@ -170,11 +171,12 @@ public class ArrowQueryEngineScenario {
           queriedScenarios.add(position);
         }
       } else {
+        // Single scenario is queried
         queriedScenarios = new IntArrayList(1);
         queriedScenarios.add(v);
       }
     } else {
-      // a subset of scenario is querying
+      // A subset of scenario is queried
       queriedScenarios = new IntArrayList(arrayOfScenarios.length);
       for (int i = 0; i < arrayOfScenarios.length; i++) {
         queriedScenarios.add(arrayOfScenarios[i]);
@@ -183,39 +185,15 @@ public class ArrowQueryEngineScenario {
     return queriedScenarios;
   }
 
-  private int[][] createPointListPattern(int scenarioIndex, int pointSize, MutableIntSet scenarios) {
-    int[][] pattern;
-    List<String> existingScenarios = new ArrayList<>(this.store.vectorByFieldByScenario.keySet());
-    int[] arrayOfScenarios = scenarios.toArray();
-    if (arrayOfScenarios.length == 0) {
-      // not even querying. default on base and nothing to do
-      pattern = new int[1][pointSize];
-      initializeArray(pattern[0]);
-    } else if (arrayOfScenarios.length == 1) {
-      int v = arrayOfScenarios[0];
-      if (v < 0) {
-        pattern = new int[existingScenarios.size()][pointSize];
-        for (int i = 0; i < existingScenarios.size(); i++) {
-          pattern[i] = new int[pointSize];
-          initializeArray(pattern[i]);
-          int position = this.store.dictionaryProvider.get(Datastore.SCENARIO_FIELD).getPosition(existingScenarios.get(i));
-          pattern[i][scenarioIndex] = position;
-        }
-      } else {
-        pattern = new int[1][pointSize];
-        initializeArray(pattern[0]);
-        pattern[0][scenarioIndex] = v;
-      }
-    } else {
-      // a subset of scenario is querying
-      pattern = new int[arrayOfScenarios.length][pointSize];
-      for (int i = 0; i < arrayOfScenarios.length; i++) {
-        pattern[i] = new int[pointSize];
-        initializeArray(pattern[i]);
-        pattern[i][scenarioIndex] = arrayOfScenarios[i];
-      }
+  private int[][] createPointListPatterns(int scenarioIndex, int pointSize, IntList queriedScenarios) {
+    int[][] patterns = new int[queriedScenarios.size()][pointSize];
+    if (scenarioIndex >= 0) {
+      queriedScenarios.forEachWithIndex((val, index) -> {
+        initializeArray(patterns[index]);
+        patterns[index][scenarioIndex] = val;
+      });
     }
-    return pattern;
+    return patterns;
   }
 
   protected static final void initializeArray(int[] array) {
