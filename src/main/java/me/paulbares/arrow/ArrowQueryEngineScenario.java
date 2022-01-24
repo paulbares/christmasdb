@@ -26,9 +26,6 @@ import java.util.Map;
  */
 public class ArrowQueryEngineScenario {
 
-  protected static final int FREE_SLOT = -1;
-  protected static final boolean DEBUG_MODE = true;
-
   protected final ArrawDatastore store;
 
   public ArrowQueryEngineScenario(ArrawDatastore store) {
